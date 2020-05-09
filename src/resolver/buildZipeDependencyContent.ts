@@ -18,7 +18,7 @@ export function buildZipDependencyContent(
 
   // external
   for (const [key, val] of externals) {
-    console.log("dependency", key, val);
+    // console.log("dependency", key, val);
 
     if (externalAsArguments) {
       // nothing

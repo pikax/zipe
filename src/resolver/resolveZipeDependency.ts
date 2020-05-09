@@ -1,14 +1,8 @@
 import { InternalResolver } from "vite/dist/resolver";
-import {
-  parse as sfcParse,
-  // compileTemplate,
-} from "@vue/compiler-sfc";
 import { filePathToVar, SFCParseResult, externalToVar } from "../utils";
 import path from "path";
-import { cachedRead, rewriteImports } from "vite";
-import { processSFC, StyleHeader } from "./processSFC";
-import { DependencyImport, replaceImports } from "./replaceImports";
-import { buildScript } from "./buildScripts";
+import { StyleHeader } from "./processSFC";
+import { DependencyImport } from "./replaceImports";
 import { resolveSFC } from "./resolveSFC";
 
 export interface DependencyPointer extends DependencyImport {
@@ -124,7 +118,7 @@ export async function resolveZipeDependency(
       .replace(r.importPath, varName);
   };
 
-  console.log("filepath", filePath);
+  // console.log("filepath", filePath);
   if (filePath.trim().endsWith(".vue")) {
     const { content, styles } = await resolveSFC(
       item,
@@ -134,12 +128,15 @@ export async function resolveZipeDependency(
     );
     item.content = content;
     item.styles = styles;
-    console.log("item.contentSFC", item.content.length);
+    // console.log("item.contentSFC", item.content.length);
 
     // console.log("item.contentSFC", item.content);
-  } else if (filePath.endsWith("html")) {
-    // TODO
+  } else {
+    console.warn("not supported");
   }
+  //  if (filePath.endsWith("html")) {
+  //   // TODO
+  // }
 
   // TODO dependencies
 

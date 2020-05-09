@@ -1,9 +1,6 @@
 import { SFCParseResult, resolveCompiler } from "../utils";
 import { posix } from "path";
-import { compileSFCStyle } from "vite";
 import hash_sum from "hash-sum";
-import { parse as sfcParse, compileTemplate } from "@vue/compiler-sfc";
-import { srcImportMap } from "vite/dist/server/serverPluginVue";
 
 export interface StyleHeader {
   id: string;

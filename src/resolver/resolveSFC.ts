@@ -12,7 +12,6 @@ export async function resolveSFC(
   resolver: InternalResolver
 ): Promise<{ content: string; styles: StyleHeader[] }> {
   const content = await cachedRead(null, item.filePath);
-  // console.log("resolvcSFC", content.length);
   const {
     script: rawScript,
     template: rawTemplate,

@@ -1,22 +1,14 @@
 <template>
   <h1>Hello Vite + Vude 3!</h1>
-  <p>Edit ./App.vue to test hot module replacement (HMR) S.</p>
+  <p>Edit ./App.vue to test hot module replacement (HMR).</p>
   <p>
     <span>Count is: {{ count }}</span>
     <button @click="count++">increment</button>
   </p>
-  <app-test />
 </template> 
 
 <script>
-import App from "./App2.vue";
-import AppTest from "./views/Test.vue";
-
 export default {
-  components: {
-    App,
-    AppTest
-  },
   data: () => ({ count: 0 })
 };
 </script>

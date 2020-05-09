@@ -8,20 +8,13 @@ export async function renderZipeApp(
   resolver: InternalResolver,
   externalDependencies: Map<string, FileDependency>
 ): Promise<string> {
-  // console.log("k", externalDependencies.keys());
-
   // TODO improve module resolving
   const externalModules: [string, string][] = [];
 
   for (const [k, e] of externalDependencies) {
-    // console.log("pth", e, e.module));
-
     // TODO do better
     const moduleName = e.module.replace("/@modules/", "");
     externalModules.push([moduleName, k]);
-    // externalModules.push(import())
-
-    // script = script.replace(e.importPath, k)
   }
 
   try {
@@ -30,14 +23,19 @@ export async function renderZipeApp(
     );
     const xxx = new Function(...externalModules.map((x) => x[1]), script);
 
-    // console.log("external modules", externalModules);
-
     const component = xxx(...resolved);
     const app = renderToString(createApp(component));
 
     return app;
   } catch (xx) {
     console.error(xx);
-    return script;
+    return `<div>
+      <p style="color:red">ERROR</p>
+      <p>${xx}</p>
+      <textarea>
+        ${script}
+      </textarea>
+      
+    </div>`;
   }
 }
