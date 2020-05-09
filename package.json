@@ -1,0 +1,27 @@
+{
+  "name": "zipe",
+  "version": "0.0.0",
+  "author": {
+    "name": "Carlos Rodrigues",
+    "email": "carlos@hypermob.co.uk",
+    "url": "https://pikax.me"
+  },
+  "scripts": {
+    "devVite": "vite",
+    "dev": "tsc -w -p src",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@types/es-module-lexer": "^0.3.0",
+    "@vue/server-renderer": "^3.0.0-beta.10",
+    "es-module-lexer": "^0.3.18",
+    "magic-string": "^0.25.7",
+    "vue": "^3.0.0-beta.10",
+    "vue-router": "^3.1.6"
+  },
+  "devDependencies": {
+    "@vue/compiler-sfc": "^3.0.0-beta.10",
+    "typescript": "^3.8.3",
+    "vite": "^0.13.1"
+  }
+}
