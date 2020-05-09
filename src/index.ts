@@ -5,6 +5,7 @@ import {
   Plugin,
   ServerConfig,
 } from "vite";
+import { renderZipeApp } from "./renderApp";
 
 import { renderToString } from "@vue/server-renderer";
 import {
@@ -29,114 +30,114 @@ import {
   rewriteCache,
 } from "vite/dist/server/serverPluginModuleRewrite";
 import { hmrClientId } from "vite/dist/server/serverPluginHmr";
-import { resolveTree, resolvedTreeToContent } from "./resolveTree";
-
-//https://gist.github.com/manekinekko/7e58a17bc62a9be47172
-const importRegex = /import(?:["'\s]*([\w*{}\n\r\t, ]+)from\s*)?["'\s].*([@\w_-]+)["'\s].*;?$/gm;
-const importFilename = /'(.*)'|`(.*)`|"(.*)"/;
+import {
+  resolveTree,
+  resolvedTreeToContent,
+  FileItem,
+  FileDependency,
+} from "./resolveTree";
+import { renderToSSRApp } from "./ssrTemplate";
 
 function createVitePreRender(): Plugin {
+  // Map<filePath, requestPath>
+  const dependencyMap = new Map<string, Set<string>>();
+  // Map<requestPath, body>
+  const requestCache = new Map<string, string>();
+
+  const dependencies = new Map<string, FileItem>();
+
   return ({ app, root, watcher, resolver, server }) => {
     app.use(async (ctx, next) => {
-      console.log("p", ctx.path);
-      if (ctx.path === "/hello") {
-        ctx.type = "text";
-        ctx.body = "HELLO";
+      if (requestCache.has(ctx.path)) {
+        console.log("using cache");
+        ctx.body = requestCache.get(ctx.path);
         return;
       }
-
-      if (ctx.path === "/app") {
+      if (ctx.path === "/") {
         await initLexer;
-        const f = await cachedRead(ctx, "App.vue");
-        const { descriptor } = parse(f);
-
-        // console.log("fg", descriptor);
-        ctx.body = descriptor.script?.content.match(importRegex);
-
-        const sfc = await stringFromSFC(
-          f,
-          "App.vue",
-          "/",
-          resolver,
-          root,
-          new Set<string>([]),
-          new Set<string>([])
-        );
-
-        const code = buildContent(
-          sfc.sfcResult,
-          "App.vue",
-          "/",
-          "/App.vue",
-          new Set()
-        );
-        ctx.body = code;
-        return;
-
-        // parse();
-      }
-
-      if (ctx.path === "/app2") {
-        await initLexer;
-
-        const dependencies = new Map();
-        const externals = new Map();
+        const externals = new Map<string, FileDependency>();
 
         const item = await resolveTree(
-          resolver.requestToFile("/App.vue"),
+          resolver.requestToFile("./playground/index.vue"),
           resolver,
           dependencies,
           externals
         );
 
-        ctx.body = item.content;
-        ctx.body = item;
-
-        return;
-      }
-      if (ctx.path === "/app3") {
-        await initLexer;
-
-        const dependencies = new Map();
-        const externals = new Map();
-
-        const item = await resolveTree(
-          resolver.requestToFile("/App.vue"),
-          resolver,
+        // NOTE we can possibly use SSRContent
+        const ssrContent = resolvedTreeToContent(
+          item,
           dependencies,
-          externals
+          externals,
+          true
+        );
+        const content = resolvedTreeToContent(
+          item,
+          dependencies,
+          externals,
+          false
+        );
+        const f = await renderZipeApp(ssrContent, resolver, externals);
+        const html = renderToSSRApp(f, content);
+        ctx.body = html;
+
+        // cache stuff
+        requestCache.set(ctx.path, html);
+
+        for (const d of dependencies.keys()) {
+          const dependencyPath = resolver.requestToFile(d);
+
+          if (!dependencyMap.has(dependencyPath)) {
+            dependencyMap.set(dependencyPath, new Set());
+          }
+
+          const s = dependencyMap.get(dependencyPath)!;
+          s.add(ctx.path);
+        }
+        return;
+      } else {
+        return next();
+      }
+    });
+
+    watcher.on("change", async (p) => {
+      const requestFile = resolver.fileToRequest(p);
+      if (dependencies.has(requestFile)) {
+        console.log("dep changed", requestFile);
+        const prev = dependencies.get(requestFile)!;
+        const externals = new Map<string, FileDependency>();
+        console.log(prev);
+        dependencies.delete(requestFile);
+        const update = await resolveTree(p, resolver, dependencies, externals);
+
+        const modules = prev.modules.filter(
+          (x) => x.module !== "/@modules/vue"
         );
 
-        const content = resolvedTreeToContent(item, dependencies, externals);
+        let invalidateAll = false;
+        // if external changes, it needs to invalidate all the cached paths
+        if (externals.size !== modules.length) {
+          invalidateAll = true;
+        } else {
+          invalidateAll = modules.some((x) => !externals.has(x.module));
+        }
 
-        ctx.body = content;
+        // NOTE not sure
+        if (invalidateAll) {
+          console.log("invalidating all");
+        }
 
-        return;
+        prev.dependencies = update.dependencies;
+        prev.modules = prev.modules;
+        prev.content = update.content;
+        prev.internal = update.internal;
+
+        const pathSet = dependencyMap.get(p)!;
+        for (const outdatedPath of pathSet) {
+          console.log("[cache] clearing cache", outdatedPath);
+          requestCache.delete(outdatedPath);
+        }
       }
-
-      // createSSRApp()
-      const app = createApp(
-        defineComponent({
-          // template: '<div>XX</div>',
-          setup() {
-            return () => {
-              return h("div", "textXXX");
-            };
-          },
-        })
-      );
-
-      ctx.body = await renderToString(app, {});
-
-      // if (ctx.path === "/App.vue") {
-
-      //   const file = resolver.requestToFile(ctx.path);
-
-      //   const xx = await cachedRead(ctx, file);
-
-      //   console.log("c", ctx.body);
-      //   // createApp()
-      // }
     });
   };
 }
@@ -147,174 +148,4 @@ export async function createServer(options: ServerConfig = {}) {
     plugins: [createVitePreRender()],
     resolvers: [],
   });
-}
-
-async function stringFromSFC(
-  source: string,
-  name: string,
-  filepath: string,
-  resolver: InternalResolver,
-  root: string,
-  imported: Set<string>,
-  modules: Set<string>
-): Promise<FileDependency> {
-  const current: FileDependency = {
-    name,
-    filepath,
-    source,
-
-    content: null as any,
-    imports: [],
-
-    sfcResult: {} as any,
-
-    hasDynamicImports: false,
-  };
-  const filename = path.posix.resolve(root, filepath, name);
-  console.log("filename", { filename, root, filepath, name });
-
-  imported.add(filename);
-
-  const parsedSFC = (current.sfcResult = parse(source, {
-    filename,
-    sourceMap: true,
-  }));
-  // current.sfcResult = null;
-
-  const script = rewriteImports(
-    parsedSFC.descriptor.script?.content ?? "",
-    filepath,
-    resolver
-  );
-
-  parsedSFC.descriptor.script!.content = script;
-
-  const [imports, other] = parseImports(script);
-
-  console.log("otehrs", other);
-  // console.log(script);
-
-  let removeScripts: string[] = [];
-
-  for (let i = imports.length - 1; i >= 0; --i) {
-    const ip = imports[i];
-    const file = script.slice(ip.s, ip.e);
-    // console.log("eee", { ip }, script.slice(ip.ss, ip.se));
-    removeScripts.push(script.slice(ip.ss, ip.se));
-
-    // TODO fix this, it doesnt work properly
-    if (file.startsWith("/@modules") || resolver.idToRequest(file)) {
-      console.log("external[skipping]", file);
-      continue;
-    }
-
-    if (imported.has(file)) {
-      console.log("file imported [skipping]");
-      continue;
-    }
-
-    // console.log("fp", { file, fff: resolver.requestToFile(file) });
-
-    const content = await cachedRead(null, resolver.requestToFile(file));
-    // console.log("import content", content);
-    const sfc = await stringFromSFC(
-      content,
-      path.basename(file),
-      file,
-      resolver,
-      root,
-      imported,
-      modules
-    );
-
-    current.imports.push(sfc);
-  }
-
-  console.log({ removeScripts });
-  for (const s of removeScripts) {
-    console.log("ss", `--${s}-`);
-    current.source.replace(s, "");
-    current.sfcResult.descriptor.script?.src?.replace(s, "");
-    const xc = current.sfcResult.descriptor.script!.content!.replace(s, "");
-    current.sfcResult.descriptor.script!.content = xc;
-  }
-
-  return current;
-}
-
-function buildContent(
-  sfc: ReturnType<typeof parse>,
-  filename: string,
-  filePath: string,
-  publicPath: string,
-
-  dependencies: Set<string>
-): string {
-  // NOTE this
-  const template = buildTemplate(
-    sfc.descriptor.template!,
-    filename,
-    publicPath,
-    dependencies
-  );
-
-  let code = sfc.descriptor.script?.content.replace(
-    `export default`,
-    "const __script ="
-  );
-
-  code += template;
-  code += `\n__script.render = render`;
-
-  code += `\n__script.__hmrId = ${JSON.stringify(publicPath)}`;
-  code += `\n__script.__file = ${JSON.stringify(filePath)}`;
-
-  return `let {${code}}`;
-}
-
-function buildStyle(styleBlock: SFCStyleBlock, publicPath: string): string {
-  // hmrClientId
-
-  return "";
-}
-
-function buildTemplate(
-  template: SFCTemplateBlock,
-  filename: string,
-  publicPath: string,
-  dependencies: Set<string>
-): string {
-  const { code, map, errors } = compileTemplate({
-    source: template.content,
-    filename,
-    inMap: template.map,
-    transformAssetUrls: {
-      base: path.posix.dirname(publicPath),
-    },
-    // todo rest serverPluginVue:300
-  });
-
-  let output = code;
-
-  const [imports] = parseImports(output);
-
-  for (const i of imports) {
-    dependencies.add(output.slice(i.ss, i.se));
-    output = output.replace(output.slice(i.ss, i.se), "");
-  }
-
-  return output;
-}
-
-interface FileDependency {
-  name: string;
-  filepath: string;
-  source: string;
-
-  content: string;
-  imports: FileDependency[];
-
-  sfcResult: ReturnType<typeof parse>;
-
-  hasDynamicImports: boolean;
 }

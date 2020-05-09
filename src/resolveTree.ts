@@ -77,7 +77,9 @@ export async function resolveTree(
 
   if (processed.has(relativePath)) {
     console.log("[skipping] processed file");
-    return processed.get(relativePath)!;
+    const p = processed.get(relativePath)!;
+    p.modules.forEach((x) => external.set(x.varName, x));
+    return p;
   }
 
   const item: FileItem = {
@@ -330,7 +332,8 @@ export async function processSFC(
 export function resolvedTreeToContent(
   item: FileItem,
   processed: Map<string, FileItem>,
-  externals: Map<string, FileDependency>
+  externals: Map<string, FileDependency>,
+  externalAsArguments: boolean = false
 ): string {
   let code = "\n\n// Zipe code begin";
 
@@ -341,11 +344,16 @@ export function resolvedTreeToContent(
   for (const [key, val] of externals) {
     console.log("dependency", key, val);
 
-    // TODO remove replace
-    code += `\nimport * as ${key} from '${val.module.replace(
-      "/@modules/",
-      ""
-    )}'`;
+    if (externalAsArguments) {
+      // nothing
+    } else {
+      // TODO remove replace
+      // code += `\nimport * as ${key} from '${val.module.replace(
+      //   "/@modules/",
+      //   ""
+      // )}'`;
+      code += `\nimport * as ${key} from '${val.module}'`;
+    }
   }
   // open block
   code += "\n{";
@@ -384,6 +392,11 @@ export function resolvedTreeToContent(
 
   // close block
   code += "\n}";
+
+  // renderApp
+  if (externalAsArguments) {
+    code += `\n return _ZIPE_APP___`;
+  }
 
   code += "\n\n// Zipe code end";
 

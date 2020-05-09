@@ -6,9 +6,18 @@
     "email": "carlos@hypermob.co.uk",
     "url": "https://pikax.me"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pikax/zipe.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pikax/zipe/issues"
+  },
+  "homepage": "https://github.com/pikax/zipe/tree/master/#readme",
   "scripts": {
     "devVite": "vite",
     "dev": "tsc -w -p src",
+    "playground": "nodemon dist/_playground.js",
     "build": "vite build"
   },
   "dependencies": {
