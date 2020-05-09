@@ -56,7 +56,7 @@ Create a plugin and provide the entry file for the SSR
 const { ssrBuild } = require("../dist");
 const { createServer } = require("vite");
 
-const myPlugin = ({
+const zipePlugin: Plugin = ({
   root, // project root directory, absolute path
   app, // Koa app instance
   resolver, // resolve file
@@ -64,18 +64,21 @@ const myPlugin = ({
   watcher, // chokidar file watcher instance
 }) => {
   app.use(async (ctx, next) => {
-    if (ctx.path === "/app") {
+    if (ctx.path === "/") {
+      // NOTE is is using the root folder
       const filePath = resolver.requestToFile("/App.vue"); // get the full path
-      const html = ssrBuild(filePath, resolver, root, watcher); // build HTML
+      const html = await ssrBuild(filePath, resolver, root, watcher); // build HTML
       ctx.body = html; //assign the html output
       return;
     }
+    await next();
   });
 };
 
 createServer({
-  plugins: [myPlugin],
-}).listen(3200);
+  // root: process.cwd(),
+  plugins: [zipePlugin],
+}).listen(4242);
 ```
 
 ## Development
