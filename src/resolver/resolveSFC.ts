@@ -1,5 +1,5 @@
 import { ImportReplacer, replaceImports } from "./replaceImports";
-import { processSFC } from "./processSFC";
+import { processSFC, StyleHeader } from "./processSFC";
 import { InternalResolver } from "vite/dist/resolver";
 import { buildScript } from "./buildScripts";
 import { ZipeDependency } from "./resolveZipeDependency";
@@ -10,21 +10,21 @@ export async function resolveSFC(
   root: string,
   replacer: ImportReplacer,
   resolver: InternalResolver
-): Promise<string> {
+): Promise<{ content: string; styles: StyleHeader[] }> {
   const content = await cachedRead(null, item.filePath);
-  console.log("resolvcSFC", content.length);
-  // TODO styles
-  const { script: rawScript, template: rawTemplate } = await processSFC(
-    content,
-    item.filePath,
-    root
-  );
+  // console.log("resolvcSFC", content.length);
+  const {
+    script: rawScript,
+    template: rawTemplate,
+    styles,
+    scopeId,
+  } = await processSFC(content, item.relativePath, root);
 
-  console.log("proceed", {
-    rawScript,
-    rawTemplate,
-    fp: item.filePath,
-  });
+  // console.log("proceed", {
+  //   rawScript,
+  //   rawTemplate,
+  //   fp: item.filePath,
+  // });
 
   // NOTE should do something with the import information??
 
@@ -42,5 +42,10 @@ export async function resolveSFC(
     null as any // magic
   );
 
-  return buildScript(item, script, template);
+  const scriptContent = buildScript(item, script, template, scopeId, styles);
+
+  return {
+    content: scriptContent,
+    styles,
+  };
 }

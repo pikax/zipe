@@ -8,6 +8,11 @@ export function buildZipDependencyContent(
 ): string {
   let code = "\n\n// Zipe code begin";
 
+  // aka server
+  if (externalAsArguments) {
+    code += `\n function updateStyle(){}`;
+  }
+
   // add init
   code += "\nlet _ZIPE_APP___\n";
 
@@ -45,6 +50,7 @@ export function buildZipDependencyContent(
     code += `\n\n// Module ${fileItem.relativePath}`;
 
     code += `\n${fileItem.content}`;
+
     modulesProcessed.add(module);
   }
 

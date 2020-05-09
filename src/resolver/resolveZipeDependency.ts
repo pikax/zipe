@@ -6,7 +6,7 @@ import {
 import { filePathToVar, SFCParseResult, externalToVar } from "../utils";
 import path from "path";
 import { cachedRead, rewriteImports } from "vite";
-import { processSFC } from "./processSFC";
+import { processSFC, StyleHeader } from "./processSFC";
 import { DependencyImport, replaceImports } from "./replaceImports";
 import { buildScript } from "./buildScripts";
 import { resolveSFC } from "./resolveSFC";
@@ -31,6 +31,9 @@ export interface ZipeDependency {
   filePath: string;
 
   content: string;
+
+  // includes children styles
+  styles: StyleHeader[];
 
   dependencies: DependencyPointer[];
   modules: DependencyPointer[];
@@ -123,7 +126,14 @@ export async function resolveZipeDependency(
 
   console.log("filepath", filePath);
   if (filePath.trim().endsWith(".vue")) {
-    item.content = await resolveSFC(item, root, replacer, resolver);
+    const { content, styles } = await resolveSFC(
+      item,
+      root,
+      replacer,
+      resolver
+    );
+    item.content = content;
+    item.styles = styles;
     console.log("item.contentSFC", item.content.length);
 
     // console.log("item.contentSFC", item.content);
@@ -142,7 +152,9 @@ export async function resolveZipeDependency(
         processed,
         external,
         root
-      )
+      ).then((x) => {
+        item.styles.push(...x.styles);
+      })
     );
   }
 

@@ -1,6 +1,14 @@
-import { hmrClientPublicPath } from "vite/dist/server/serverPluginHmr";
+import {
+  hmrClientPublicPath,
+  hmrClientId,
+} from "vite/dist/server/serverPluginHmr";
+import { StyleHeader } from "./resolver/processSFC";
 
-export function renderToSSRApp(htmlHydrated: string, scriptSPA: string) {
+export function renderToSSRApp(
+  htmlHydrated: string,
+  scriptSPA: string,
+  styles: StyleHeader[]
+) {
   // since some ESM builds expect these to be replaced by the bundler
   const devInjectionCode =
     `\n<script type="module">` +
@@ -9,19 +17,30 @@ export function renderToSSRApp(htmlHydrated: string, scriptSPA: string) {
     `window.process = { env: { NODE_ENV: 'development' }}\n` +
     `</script>\n`;
 
+  const devStyleUpdateInjection = `\nimport { updateStyle } from "/${hmrClientId}"`;
+
+  const styleHeader = styles
+    .map(
+      (x) =>
+        `<link id="vite-css-${x.id}" rel="stylesheet" type="text/css" href="${x.href}">`
+    )
+    .join("\n");
+
   const html = `
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>Vite App</title>
+    ${styleHeader}
   </head>
   <body>
     <div id="app">${htmlHydrated}</div>
     ${devInjectionCode}
     <script type="module">
       // import { createSSRApp } from "vue";
-      
+      ${devStyleUpdateInjection}
+
       ${scriptSPA}
 
       _____modules_vue_.createSSRApp(_ZIPE_APP___).mount("#app");

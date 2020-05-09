@@ -49,7 +49,7 @@ export function createZipePrerender(options?: { component: string }): Plugin {
           false
         );
         const f = await renderZipeApp(ssrContent, resolver, externals);
-        const html = renderToSSRApp(f, content);
+        const html = renderToSSRApp(f, content, item.styles);
         ctx.body = html;
         return;
       }

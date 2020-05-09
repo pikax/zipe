@@ -1,13 +1,22 @@
 import { SFCParseResult, resolveCompiler } from "../utils";
 import { posix } from "path";
+import { compileSFCStyle } from "vite";
+import hash_sum from "hash-sum";
 import { parse as sfcParse, compileTemplate } from "@vue/compiler-sfc";
+import { srcImportMap } from "vite/dist/server/serverPluginVue";
+
+export interface StyleHeader {
+  id: string;
+  href: string;
+}
 
 export interface ProcessSFCResult {
   sfc: SFCParseResult;
 
   template: string;
   script: string;
-  styles: string;
+  scopeId: string;
+  styles: StyleHeader[];
 }
 
 export async function processSFC(
@@ -20,7 +29,8 @@ export async function processSFC(
 
     template: null,
     script: null,
-    styles: null,
+    scopeId: undefined,
+    styles: [],
   } as any;
 
   // TODO add options information
@@ -50,6 +60,41 @@ export async function processSFC(
   item.script = sfc.descriptor.script?.content ?? "";
 
   // TODO styles
+
+  // console.log('publui path ', publicPath)
+  // styles
+  // code from vite serverPluginVue
+  const id = hash_sum(publicPath);
+  let hasScoped = false;
+  let hasCSSModules = false;
+  let styleCode = "";
+  sfc.descriptor.styles.forEach((s, i) => {
+    const styleRequest = publicPath + `?type=style&index=${i}`;
+    if (s.scoped) hasScoped = true;
+    if (s.module) {
+      if (!hasCSSModules) {
+        styleCode += `\nconst __cssModules = __script.__cssModules = {}`;
+        hasCSSModules = true;
+      }
+      const styleVar = `__style${i}`;
+      const moduleName = typeof s.module === "string" ? s.module : "$style";
+      styleCode += `\nimport ${styleVar} from ${JSON.stringify(
+        styleRequest + "&module"
+      )}`;
+      styleCode += `\n__cssModules[${JSON.stringify(
+        moduleName
+      )}] = ${styleVar}`;
+    }
+
+    item.styles.push({
+      id: `${id}-${i}`,
+      href: styleRequest,
+    });
+  });
+  if (hasScoped) {
+    item.scopeId = id;
+    // styleCode += `\n__script.__scopeId = "data-v-${id}"`;
+  }
 
   return item;
 }

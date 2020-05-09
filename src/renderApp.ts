@@ -8,7 +8,7 @@ export async function renderZipeApp(
   resolver: InternalResolver,
   externalDependencies: Map<string, FileDependency>
 ): Promise<string> {
-  console.log("k", externalDependencies.keys());
+  // console.log("k", externalDependencies.keys());
 
   // TODO improve module resolving
   const externalModules: [string, string][] = [];
@@ -24,15 +24,20 @@ export async function renderZipeApp(
     // script = script.replace(e.importPath, k)
   }
 
-  console.log("scri", script);
+  try {
+    const resolved = await Promise.all(
+      externalModules.map((x) => import(x[0]))
+    );
+    const xxx = new Function(...externalModules.map((x) => x[1]), script);
 
-  const resolved = await Promise.all(externalModules.map((x) => import(x[0])));
-  const xxx = new Function(...externalModules.map((x) => x[1]), script);
+    // console.log("external modules", externalModules);
 
-  console.log("external modules", externalModules);
+    const component = xxx(...resolved);
+    const app = renderToString(createApp(component));
 
-  const component = xxx(...resolved);
-  const app = renderToString(createApp(component));
-
-  return app;
+    return app;
+  } catch (xx) {
+    console.error(xx);
+    return script;
+  }
 }

@@ -1,10 +1,13 @@
 import { ZipeDependency } from "./resolveZipeDependency";
+import { StyleHeader } from "./processSFC";
 
 // TODO styles
 export function buildScript(
   item: ZipeDependency,
   script: string,
-  template: string
+  template: string,
+  scopeId: string | undefined,
+  styles: StyleHeader[]
 ) {
   const name = item.varName;
 
@@ -15,6 +18,15 @@ export function buildScript(
 
   // script
   code += script.replace("export default", `${name} = `);
+
+  if (scopeId) {
+    code += `\n${name}.__scopeId = "data-v-${scopeId}"\n`;
+  }
+
+  if (styles) {
+    // styles.forEach((s) => (code += `\n${s}\n`));
+    styles.forEach((x) => `updateStyle("${x.id}", "${x.href}")\n`);
+  }
 
   // template
   if (template) {

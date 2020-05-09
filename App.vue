@@ -1,5 +1,5 @@
 <template>
-  <h1>Hello Vite + Vue 3!</h1>
+  <h1>Hello Vite + Vude 3!</h1>
   <p>Edit ./App.vue to test hot module replacement (HMR).</p>
   <p>
     <span>Count is: {{ count }}</span>
@@ -19,7 +19,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
 h1 {
   color: #4fc08d;
 }
