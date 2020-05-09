@@ -1,5 +1,5 @@
 <template>
-  <h1>Hello Vite + Vude 3!</h1>
+  <h1>Hello Vite + Vue 3 + Zipe!</h1>
   <p>Edit ./App.vue to test hot module replacement (HMR) S.</p>
   <p>
     <span>Count is: {{ count }}</span>
@@ -9,12 +9,10 @@
 </template> 
 
 <script>
-import App from "./App2.vue";
 import AppTest from "./views/Test.vue";
 
 export default {
   components: {
-    App,
     AppTest
   },
   data: () => ({ count: 0 })
