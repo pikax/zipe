@@ -23,7 +23,7 @@ export async function ssrBuild(
   resolver: InternalResolver,
   root: string,
   watcher: HMRWatcher | undefined
-): string {
+): Promise<string> {
   await initLexer;
   const externals = new Map<string, FileDependency>();
 

@@ -77,3 +77,20 @@ createServer({
   plugins: [myPlugin],
 }).listen(3200);
 ```
+
+## Development
+
+```bash
+
+git clone https://github.com/pikax/zipe
+
+cd zip
+
+yarn
+
+yarn dev & yarn playground
+
+# edit /App.vue
+# or go to src/_playground.ts and change
+
+```
