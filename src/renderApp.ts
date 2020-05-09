@@ -24,6 +24,8 @@ export async function renderZipeApp(
     // script = script.replace(e.importPath, k)
   }
 
+  console.log("scri", script);
+
   const resolved = await Promise.all(externalModules.map((x) => import(x[0])));
   const xxx = new Function(...externalModules.map((x) => x[1]), script);
 

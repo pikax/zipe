@@ -3,8 +3,6 @@ import MagicString, { SourceMap } from "magic-string";
 import { init as initLexer, parse as parseImports } from "es-module-lexer";
 import {
   parse as sfcParse,
-  SFCTemplateBlock,
-  SFCStyleBlock,
   compileTemplate,
 } from "@vue/compiler-sfc";
 import { InternalResolver } from "vite/dist/resolver";
