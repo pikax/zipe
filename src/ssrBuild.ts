@@ -6,7 +6,6 @@ import {
 } from "./resolver/resolveZipeDependency";
 import { InternalResolver } from "vite/dist/resolver";
 import { HMRWatcher } from "vite/dist/server/serverPluginHmr";
-import { FileDependency } from "./resolveTree";
 import { buildZipDependencyContent } from "./resolver/buildZipeDependencyContent";
 import { renderZipeApp } from "./renderApp";
 import { renderToSSRApp } from "./ssrTemplate";
@@ -25,7 +24,7 @@ export async function ssrBuild(
   watcher: HMRWatcher | undefined
 ): Promise<string> {
   await initLexer;
-  const externals = new Map<string, FileDependency>();
+  const externals = new Map<string, DependencyPointer>();
 
   // build dependencies
   const item = await resolveZipeDependency(

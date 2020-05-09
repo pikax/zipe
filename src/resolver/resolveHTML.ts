@@ -1,9 +1,9 @@
-import { ImportReplacer, replaceImports } from "./replaceImports";
-import { processSFC } from "./processSFC";
-import { InternalResolver } from "vite/dist/resolver";
-import { buildScript } from "./buildScripts";
-import { ZipeDependency } from "./resolveZipeDependency";
-import { cachedRead } from "vite";
+// import { ImportReplacer, replaceImports } from "./replaceImports";
+// import { processSFC } from "./processSFC";
+// import { InternalResolver } from "vite/dist/resolver";
+// import { buildScript } from "./buildScripts";
+// import { ZipeDependency } from "./resolveZipeDependency";
+// import { cachedRead } from "vite";
 
 // export async function resolveHTML(
 //   item: ZipeDependency,

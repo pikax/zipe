@@ -1,12 +1,12 @@
-import { FileDependency } from "./resolveTree";
 import { InternalResolver } from "vite/dist/resolver";
 import { createApp } from "vue";
 import { renderToString } from "@vue/server-renderer";
+import { DependencyPointer } from "./resolver/resolveZipeDependency";
 
 export async function renderZipeApp(
   script: string,
   resolver: InternalResolver,
-  externalDependencies: Map<string, FileDependency>
+  externalDependencies: Map<string, DependencyPointer>
 ): Promise<string> {
   // TODO improve module resolving
   const externalModules: [string, string][] = [];

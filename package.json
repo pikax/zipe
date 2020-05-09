@@ -18,7 +18,7 @@
     "devVite": "vite",
     "dev": "tsc -w -p src",
     "playground": "nodemon dist/_playground.js",
-    "build": "vite build"
+    "build": "tsc -p src"
   },
   "dependencies": {
     "@types/es-module-lexer": "^0.3.0",

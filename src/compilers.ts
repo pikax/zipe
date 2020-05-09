@@ -3,7 +3,7 @@
 import chalk from "chalk";
 import path from "path";
 import {
-  SFCBlock,
+  // SFCBlock,
   SFCDescriptor,
   SFCTemplateBlock,
   SFCStyleBlock,
@@ -13,8 +13,8 @@ import {
 import hash_sum from "hash-sum";
 import LRUCache from "lru-cache";
 import resolve from "resolve-from";
-import { Context } from "koa";
-import { InternalResolver } from "vite/dist/resolver";
+// import { Context } from "koa";
+// import { InternalResolver } from "vite/dist/resolver";
 import { transform } from "vite/dist/esbuildService";
 import { cachedRead } from "vite";
 import { resolveCompiler } from "./utils";
