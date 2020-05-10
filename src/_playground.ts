@@ -40,7 +40,7 @@ const zipePlugin: Plugin = ({
   app.use(async (ctx, next) => {
     if (ctx.path === "/") {
       // NOTE is is using the root folder
-      const filePath = resolver.requestToFile("/App.vue"); // get the full path
+      const filePath = resolver.requestToFile("/playground/App.vue"); // get the full path
       const html = await ssrBuild(filePath, resolver, root, watcher); // build HTML
       ctx.body = html; //assign the html output
       return;

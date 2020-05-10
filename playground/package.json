@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "dev": "vite --debug --jsx-factory=h --open",
+    "build": "vite build --debug --jsx-factory=h",
+    "serve": "serve dist"
+  }
+}
