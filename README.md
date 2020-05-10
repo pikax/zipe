@@ -16,6 +16,7 @@ The HMR is the same as `vite` so no more page reloads, only the changed componen
 
 - Proof of concept
 - SSR with HMR
+- importing js/ts files in SFC
 
 ## NOT working
 
@@ -24,11 +25,10 @@ The HMR is the same as `vite` so no more page reloads, only the changed componen
 - No source maps
 - css modules
 - css scope seems not to be working when doing SSR
-- importing js/ts files in SFC, only SFC files are supported
+- No JSX/TSX support
 
 ## TODO
 
-- `typescript` support
 - `vue-router` support (some limitations, for example adding new routes on the fly and such)
 - `source-maps` currently source maps don't exist, may need help here.
 - `lifecycle hooks` with composition-api

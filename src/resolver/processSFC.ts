@@ -1,6 +1,9 @@
 import { SFCParseResult, resolveCompiler } from "../utils";
 import { posix } from "path";
 import hash_sum from "hash-sum";
+import { transform } from "vite/dist/esbuildService";
+
+const debug = require("debug")("zipe:processSFC");
 
 export interface StyleHeader {
   id: string;
@@ -34,6 +37,20 @@ export async function processSFC(
   const { parse, compileTemplate } = resolveCompiler(root);
   const sfc = (item.sfc = parse(content));
 
+  let code = "";
+  if (sfc.descriptor.script) {
+    let content = sfc.descriptor.script.content;
+    if (sfc.descriptor.script.lang === "ts") {
+      item.script = (
+        await transform(content, publicPath, { loader: "ts" })
+      ).code;
+    } else {
+      item.script = sfc.descriptor.script.content;
+    }
+  } else {
+    code += `""`;
+  }
+
   //TODO output errors
 
   // TODO use customBlocks?
@@ -53,8 +70,6 @@ export async function processSFC(
 
     item.template = code.replace("export function render(", "function render(");
   }
-
-  item.script = sfc.descriptor.script?.content ?? "";
 
   // TODO styles
 

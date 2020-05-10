@@ -11,6 +11,9 @@ export function buildZipDependencyContent(
   // aka server
   if (externalAsArguments) {
     code += `\n function updateStyle(){}`;
+
+    // TODO expose this some other way
+    code = `const __DEV__ = ${process.env.NODE_ENV !== "production"}\n`;
   }
 
   // add init
@@ -76,8 +79,13 @@ export function treeDependencyToCode(
   processed: Map<string, ZipeDependency>
 ) {
   let deps: string[] = [];
+  const zipeDep = processed.get(dep.module);
 
-  for (const d of processed.get(dep.module)!.dependencies) {
+  if (!zipeDep) {
+    return deps;
+  }
+
+  for (const d of zipeDep.dependencies) {
     const x = treeDependencyToCode(d, processed);
     deps.push(...x);
   }

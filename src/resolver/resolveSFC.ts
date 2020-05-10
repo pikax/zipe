@@ -3,15 +3,14 @@ import { processSFC, StyleHeader } from "./processSFC";
 import { InternalResolver } from "vite/dist/resolver";
 import { buildScript } from "./buildScripts";
 import { ZipeDependency } from "./resolveZipeDependency";
-import { cachedRead } from "vite";
 
 export async function resolveSFC(
   item: ZipeDependency,
+  content: string,
   root: string,
   replacer: ImportReplacer,
   resolver: InternalResolver
 ): Promise<{ content: string; styles: StyleHeader[] }> {
-  const content = await cachedRead(null, item.filePath);
   const {
     script: rawScript,
     template: rawTemplate,
@@ -30,6 +29,7 @@ export async function resolveSFC(
   const [script] = replaceImports(
     rawScript,
     resolver,
+    item.relativePath,
     replacer,
     null as any // magic
   );
@@ -37,6 +37,7 @@ export async function resolveSFC(
   const [template] = replaceImports(
     rawTemplate,
     resolver,
+    item.relativePath,
     replacer,
     null as any // magic
   );

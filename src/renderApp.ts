@@ -10,17 +10,24 @@ export async function renderZipeApp(
 ): Promise<string> {
   // TODO improve module resolving
   const externalModules: [string, string][] = [];
-
-  for (const [k, e] of externalDependencies) {
-    // TODO do better
-    const moduleName = e.module.replace("/@modules/", "");
-    externalModules.push([moduleName, k]);
-  }
-
   try {
+    for (const [k, e] of externalDependencies) {
+      // TODO do better
+      const moduleName = e.module.replace("/@modules/", "");
+      externalModules.push([moduleName, k]);
+    }
+    const init = Date.now();
+
+    // load modules, if the modules not exist try to load from the web_modules
     const resolved = await Promise.all(
-      externalModules.map((x) => import(x[0]))
+      externalModules.map(
+        (x) => import(x[0]) //.catch((_) => import(`../web_modules/${x[0]}`))
+      )
     );
+
+    const end = Date.now();
+    console.log("resolving external: ", end - init);
+
     const xxx = new Function(...externalModules.map((x) => x[1]), script);
 
     const component = xxx(...resolved);
@@ -28,11 +35,12 @@ export async function renderZipeApp(
 
     return app;
   } catch (xx) {
-    console.error(xx);
+    console.error(xx, script);
+    console.log("externalModules", externalModules);
     return `<div>
       <p style="color:red">ERROR</p>
       <p>${xx}</p>
-      <textarea>
+      <textarea cols=500 rows=500>
         ${script}
       </textarea>
       

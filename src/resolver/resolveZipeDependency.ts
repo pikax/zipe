@@ -4,6 +4,11 @@ import path from "path";
 import { StyleHeader } from "./processSFC";
 import { DependencyImport } from "./replaceImports";
 import { resolveSFC } from "./resolveSFC";
+import { buildScript } from "./buildScripts";
+import { cachedRead } from "vite";
+import { transform } from "vite/dist/esbuildService";
+
+const debug = require("debug")("zipe:resolveDependency");
 
 export interface DependencyPointer extends DependencyImport {
   // id: number;
@@ -57,6 +62,18 @@ export async function resolveZipeDependency(
     console.log("[skipping] processed file");
     const p = processed.get(relativePath)!;
     p.modules.forEach((x) => external.set(x.varName, x));
+    if (p.dependencies) {
+      const promises = p.dependencies.map((x) =>
+        resolveZipeDependency(
+          resolver.requestToFile(x.module),
+          resolver,
+          processed,
+          external,
+          root
+        )
+      );
+      await Promise.all(promises);
+    }
     return p;
   }
 
@@ -73,6 +90,8 @@ export async function resolveZipeDependency(
 
     dependencies: [],
     modules: [],
+
+    styles: [],
 
     internal: {
       sfc: undefined,
@@ -94,7 +113,7 @@ export async function resolveZipeDependency(
       ? externalToVar(r.module)
       : filePathToVar(r.module);
 
-    console.log("[replacing] dependency", r.module, "to", varName);
+    debug("[replacing] dependency", r.module, "to", varName);
 
     const dep = {
       varName,
@@ -118,10 +137,14 @@ export async function resolveZipeDependency(
       .replace(r.importPath, varName);
   };
 
+  const rawContent = await cachedRead(null, item.filePath);
+
+  const ext = path.extname(filePath);
   // console.log("filepath", filePath);
-  if (filePath.trim().endsWith(".vue")) {
+  if (ext.endsWith(".vue")) {
     const { content, styles } = await resolveSFC(
       item,
+      rawContent,
       root,
       replacer,
       resolver
@@ -131,8 +154,14 @@ export async function resolveZipeDependency(
     // console.log("item.contentSFC", item.content.length);
 
     // console.log("item.contentSFC", item.content);
+  } else if (ext === ".js") {
+    item.content = buildScript(item, rawContent);
+  } else if (ext === ".ts") {
+    const js = await transform(rawContent, item.relativePath, { loader: "ts" });
+    item.content = buildScript(item, js.code);
   } else {
-    console.warn("not supported");
+    // item.content = `import (${relativePath})`;
+    console.warn("[warn] not supported file type", path.extname(filePath));
   }
   //  if (filePath.endsWith("html")) {
   //   // TODO

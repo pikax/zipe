@@ -15,7 +15,7 @@
 <script>
 import { createRouter } from 'vue-router'
 import { createStore } from 'vuex'
-import { dep } from 'web-modules-dep'
+// import { dep } from 'web-modules-dep'
 import { foo } from './util'
 
 export default {

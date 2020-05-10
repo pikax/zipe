@@ -32,7 +32,7 @@ import TestModuleResolve from './TestModuleResolve.vue'
 // import TestSrcImport from './src-import/TestBlockSrcImport.vue'
 // import TestAssets from './TestAssets.vue'
 // import TestJsonImport from './TestJsonImport.vue'
-// import TestTs from './ts/TestTs.vue'
+import TestTs from './ts/TestTs.vue'
 // import TestJsx from './TestJsx.vue'
 
 export default {
@@ -50,7 +50,7 @@ export default {
     // TestSrcImport,
     // TestAssets,
     // TestJsonImport,
-    // TestTs,
+    TestTs,
     // TestJsx,
     TestAsync: defineAsyncComponent(() => import('./TestAsync.vue'))
   }

@@ -24,13 +24,14 @@ export type ImportReplacer = (
 export function replaceImports(
   content: string,
   resolver: InternalResolver,
+  importer: string,
   replacer: ImportReplacer,
   s: MagicString
 ): [string, DependencyImport[]] {
   // TODO fix with magic string
 
   // TODO importer is always root??
-  const rawScript = rewriteImports(content, "/", resolver);
+  const rawScript = rewriteImports(content, importer, resolver);
   // TODO replace exports
   const [imports] = parseImports(rawScript);
 
