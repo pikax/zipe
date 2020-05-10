@@ -1,6 +1,7 @@
 import { parse } from "@vue/compiler-sfc";
 import * as sfcCompiler from "@vue/compiler-sfc";
 
+export type SFCCompiler = typeof sfcCompiler;
 export type SFCParseResult = ReturnType<typeof parse>;
 
 export const filePathToVar = (p: string) =>
