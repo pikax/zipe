@@ -26,6 +26,7 @@ The HMR is the same as `vite` so no more page reloads, only the changed componen
 - css modules
 - css scope seems not to be working when doing SSR
 - No JSX/TSX support
+- Async imports are not SSR
 
 ## TODO
 
