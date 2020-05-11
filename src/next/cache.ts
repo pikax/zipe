@@ -4,6 +4,7 @@ export interface ZipeCache<K = string, T = any> {
   set(key: K, v: T): void;
   get<T>(key: K): T | Promise<T>;
   has(key: K): boolean | Promise<boolean>;
+  delete(key: K): void;
 }
 
 export function buildMemoryCache(): ZipeCache {
@@ -18,6 +19,9 @@ export function buildMemoryCache(): ZipeCache {
     },
     has(k) {
       return cache.has(k);
+    },
+    delete(k) {
+      return cache.del(k);
     },
   };
 }

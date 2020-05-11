@@ -75,6 +75,8 @@ export const vueStyleTransform: ZipeScriptTransform = async (
     });
   }
 
+  // console.log("styles", style);
+
   debug(`${filePath} style compiled compiled in ${Date.now() - start}ms.`);
 
   return {

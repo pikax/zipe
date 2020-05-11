@@ -5,6 +5,8 @@
   </div>
 </template>
 <script lang="ts">
+import AppTest from "./../App.vue";
+
 import { defineComponent } from "vue";
 
 export default defineComponent({});

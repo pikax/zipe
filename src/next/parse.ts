@@ -5,6 +5,7 @@ import { posix } from "path";
 import { ZipeParser } from "./parser";
 import { ZipeScriptTransform } from "./transformers";
 import { resolveImport, parseImportsExports } from "../parseImports";
+import { SFCDescriptor } from "@vue/compiler-sfc";
 
 const debug = require("debug")("zipe:parse");
 
@@ -59,6 +60,7 @@ export interface ZipeModule {
   map: string | undefined;
 
   sfc: {
+    descriptor: SFCDescriptor | null;
     scopeId: string | undefined;
     styles: {
       code: string;
@@ -120,6 +122,7 @@ export async function parse(
       raw: {},
     },
     sfc: {
+      descriptor: null,
       scopeId: undefined,
       script: {
         code: "",
@@ -160,13 +163,7 @@ export async function parse(
       module.name,
       resolver
     );
-
-    // console.log({
-    //   imports,
-    //   exports,
-    //   // code: item.sfc.script.code,
-    // });
-
+    
     item.sfc.script.dependencies = imports;
     item.sfc.script.exports = exports;
     item.exports = exports;
@@ -178,8 +175,6 @@ export async function parse(
       let start = Date.now();
       // TODO add transformer options, probably build transformers?
       const { code, map } = await transformer(rawContent, filePath, {});
-      // debug(`${filePath} transformed in ${Date.now() - start}ms.`);
-
       item.code = code;
       item.map = map as string;
       const [imports, exports] = parseImportsExports(
@@ -198,7 +193,7 @@ export async function parse(
   }
 
   item.fullDependencies.push(...item.dependencies);
-  const promises: Promise<ZipeModule>[] = [];
+  const promises: Promise<ZipeModule[]>[] = [];
   for (const dependency of item.dependencies.filter((x) => !x.info.module)) {
     promises.push(
       parse(
@@ -209,16 +204,20 @@ export async function parse(
         dependenciesCache,
         sfcParser,
         transformers
-      ).then((x) => {
+      ).then(async (x) => {
         item.extra.styles.push(...x.extra.styles);
         item.fullDependencies.push(...x.fullDependencies);
 
-        return x;
+        const deps = (await x.dependenciesPromise) ?? [];
+        return [x, ...deps];
       })
     );
   }
 
-  item.dependenciesPromise = Promise.all(promises);
+  item.dependenciesPromise = Promise.all(promises).then((x) => [
+    item,
+    ...x.flat(),
+  ]);
 
   return item;
 }

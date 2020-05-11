@@ -1,11 +1,11 @@
-import { createServer as createViteServer, Plugin } from "vite";
+import { createServer as createViteServer, Plugin, ServerPlugin } from "vite";
 import { ssrBuild } from "./ssrBuild";
 
 import * as viteZipe from "./vite";
 import { parse as zipeParse, ZipeModule } from "./next/parse";
 import { buildMemoryCache } from "./next/cache";
 import { buildSFCParser } from "./next/parsers/sfcParser";
-import { resolveCompiler, loadPostcssConfig } from "vite/dist/utils";
+import { resolveCompiler, loadPostcssConfig, readBody } from "vite/dist/utils";
 import resolve from "resolve-from";
 import { posix } from "path";
 import { scriptTransforms } from "./next/transformers";
@@ -46,7 +46,7 @@ import { outputSSR } from "./outputSSR";
 //   });
 // }
 
-const zipePlugin: Plugin = ({
+const zipePlugin: ServerPlugin = ({
   root, // project root directory, absolute path
   app, // Koa app instance
   resolver, // resolve file
@@ -90,6 +90,7 @@ const zipePlugin: Plugin = ({
     });
 
     if (ctx.path === "/output") {
+      console.log("building output");
       const filePath = "/App.vue"; //resolver.requestToFile("/playground/App.vue"); // get the full path
       const o = await outputSSR(
         filePath,
@@ -99,11 +100,11 @@ const zipePlugin: Plugin = ({
         sfcParser,
         pipeline,
         { ...scriptTransforms, ...ViteTransformers },
-        [],
-        () => Promise.resolve("")
+        []
       );
 
       ctx.body = o; //.replace("/@modules/", "");
+      // ctx.body = "suop";
       return;
     }
 

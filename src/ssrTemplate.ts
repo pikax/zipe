@@ -24,6 +24,7 @@ export function renderToSSRApp(
 
   const devStyleUpdateInjection = `\nimport { updateStyle } from "/${hmrClientId}"`;
 
+  console.log("sty", styles);
   const styleHeader = styles
     .map(
       (x) =>

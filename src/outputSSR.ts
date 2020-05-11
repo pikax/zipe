@@ -11,6 +11,7 @@ import { filePathToVar } from "./utils";
 import { renderToString } from "@vue/server-renderer";
 import { renderToSSRApp } from "./ssrTemplate";
 import { createSSRApp, createApp } from "vue";
+import hash_sum from "hash-sum";
 
 export async function outputSSR(
   filePath: string,
@@ -20,9 +21,7 @@ export async function outputSSR(
   sfcParser: ZipeParser,
   pipeline: (module: ZipeModule, ssr: boolean) => Promise<string>,
   scriptTransforms: Record<string, ZipeScriptTransform>,
-  outputTransforms: ZipeScriptTransform[],
-
-  buildHTML: (body: string, script: string) => Promise<string>
+  outputTransforms: ZipeScriptTransform[]
 ): Promise<string> {
   const start = Date.now();
 
@@ -35,7 +34,7 @@ export async function outputSSR(
     sfcParser,
     scriptTransforms
   );
-  await module.dependenciesPromise;
+  const deps = await module.dependenciesPromise;
 
   let [script, ssrRawScript] = await Promise.all([
     pipeline(module, false),
@@ -77,12 +76,30 @@ export async function outputSSR(
     filePathToVar
   );
 
+  // console.log("deps", deps?.length);
+  // console.log(';ssss', deps?.map(x=>x.sfc.descriptor?.styles))
+  const styles =
+    deps
+      ?.filter((x) => x.sfc.descriptor?.styles.length ?? 0 > 0)
+      .map((x) =>
+        x.sfc.styles.map((s, i) => {
+          const id = hash_sum(x.name);
+          const href = x.module.path + `?type=style&index=${i}`;
+
+          return {
+            id,
+            href,
+          };
+        })
+      )
+      .flat() ?? [];
+
   const html = renderToSSRApp(
     htmlOutput,
     appName,
     filePathToVar("/@modules/vue"),
     clientScript,
-    []
+    styles
   );
   console.log(`${filePath} SSR in ${Date.now() - start}ms.`);
 

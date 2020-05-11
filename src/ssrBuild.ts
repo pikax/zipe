@@ -51,32 +51,6 @@ export async function ssrBuild(
   const f = await renderZipeApp(ssrContent, resolver, externals);
   const html = renderToSSRApp(f, content, item.styles);
 
-  if (watcher) {
-    watcher.on("change", async (p) => {
-      const requestFile = resolver.fileToRequest(p);
-      if (dependencies.has(requestFile)) {
-        // console.log("dep changed", requestFile);
-        const prev = dependencies.get(requestFile)!;
-        const externals = new Map<string, DependencyPointer>();
-        console.log(prev);
-        dependencies.delete(requestFile);
-        await resolveZipeDependency(p, resolver, dependencies, externals, root);
-
-        const pathSet = dependencyMap.get(p);
-        if (!pathSet) {
-          return;
-        }
-        for (const outdatedPath of pathSet) {
-          console.log("[cache] clearing cache", outdatedPath);
-          requestCache.delete(outdatedPath);
-        }
-      }
-    });
-  } else {
-    // clear all cache
-    dependencyMap.clear();
-    dependencies.clear();
-  }
 
   return html;
 }

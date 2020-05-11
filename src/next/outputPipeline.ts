@@ -43,10 +43,14 @@ export function buildOutputPipeline(
       });
     }
 
+    const processed = new Set<string>();
     // append scripts together
     for (let i = scripts.length - 1; i >= 0; --i) {
       const script = scripts[i];
-      console.log("script", script.name, ssr);
+      if (processed.has(script.name)) {
+        continue;
+      }
+      // console.log("script", script.name, ssr);
       const snippet = scriptBuilder(
         scripts[i],
         dependenciesCache,
@@ -64,6 +68,8 @@ export function buildOutputPipeline(
       if (comments) {
         code += `\n// end ${script.name} \n`;
       }
+
+      processed.add(script.name);
     }
 
     // run transformers
