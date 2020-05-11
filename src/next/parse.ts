@@ -50,7 +50,12 @@ export interface ZipeModule {
   };
 
   code: string | null;
-  codeSSR: string | null;
+
+  processed: {
+    code: string | null;
+    ssr: string | null;
+  };
+
   map: string | undefined;
 
   sfc: {
@@ -89,12 +94,12 @@ export async function parse(
   const name = posix.basename(module.name);
   const extension = posix.extname(module.path).slice(1);
 
-  // if (dependenciesCache.has(module.path)) {
-  //   debug(`serving cached '${module.path}'`);
-  //   return dependenciesCache.get(module.path);
-  // } else {
-  //   debug(`building ${module.path}`);
-  // }
+  if (dependenciesCache.has(module.path)) {
+    debug(`serving cached '${module.path}'`);
+    return dependenciesCache.get(module.path);
+  } else {
+    debug(`building ${module.path}`);
+  }
 
   const item: ZipeModule = {
     name,
@@ -102,7 +107,10 @@ export async function parse(
     extension,
     rawContent: "",
     code: null,
-    codeSSR: null,
+    processed: {
+      code: null,
+      ssr: null,
+    },
     map: undefined,
     dependencies: [],
     fullDependencies: [],

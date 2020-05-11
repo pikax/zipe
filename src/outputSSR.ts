@@ -68,13 +68,6 @@ export async function outputSSR(
     ),
   ]);
 
-  // externalModuleRewrite
-
-  // return JSON.stringify({
-  //   ssrScript,
-  //   clientScript,
-  // });
-  // return clientScript;
   const appName = filePathToVar(filePath);
   const external = module.fullDependencies.filter((x) => x.info.module);
   const htmlOutput = await renderApp(

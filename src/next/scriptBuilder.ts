@@ -10,6 +10,15 @@ export function scriptBuilder(
   ssr = false,
   comments = false
 ) {
+  if (ssr) {
+    if (item.processed.ssr) {
+      debug("returning cached ssr");
+      return item.processed.ssr;
+    }
+  } else if (item.processed.code) {
+    debug("returning cached code");
+    return item.processed.code;
+  }
   const name = varNameResolver(item.module.path);
   // TODO check if this is actually correct, not sure if is worth to have script builder as a transformer
   const script = item.sfc.script.code
@@ -103,6 +112,12 @@ export function scriptBuilder(
 
   // end block
   code += "\n}";
+
+  if (ssr) {
+    item.processed.ssr = code;
+  } else {
+    item.processed.code = code;
+  }
 
   debug(`${item.name} script built in ${Date.now() - start}ms.`);
 
