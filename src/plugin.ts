@@ -1,6 +1,4 @@
-import { init as initLexer } from "es-module-lexer";
 import { ServerPlugin, ServerPluginContext, rewriteImports } from "vite";
-import { ssrBuild } from "./ssrBuild";
 import resolve from "resolve-from";
 import { buildViteCache, buildViteModuleResolver } from "./vite";
 import { buildMemoryCache } from "./next";
@@ -11,30 +9,7 @@ import { buildSFCParser } from "./next/parsers/sfcParser";
 import { outputSSR } from "./outputSSR";
 import { scriptTransforms, ZipeScriptTransform } from "./next/transformers";
 import { scriptTransforms as ViteTransformers } from "./vite/transformers";
-
-export function createZipePrerender(options?: {
-  component: string;
-}): ServerPlugin {
-  options = options ?? { component: "/App.vue" };
-
-  return ({ app, root, watcher, resolver, server }) => {
-    app.use(async (ctx, next) => {
-      if (ctx.path === "/") {
-        await initLexer;
-        const html = await ssrBuild(
-          resolver.requestToFile(options!.component),
-          resolver,
-          root,
-          watcher
-        );
-        ctx.body = html;
-        return;
-      }
-
-      await next();
-    });
-  };
-}
+import { parse } from "./next/parse";
 
 export type ZipeBuilder = (component: string) => Promise<string>;
 
@@ -49,22 +24,18 @@ export function createViteSSR(
     const moduleResolver = buildViteModuleResolver(resolver, root);
     const dependencies = buildMemoryCache();
 
-    // let vite know about this file
-    const viteCacheFile: ZipeScriptTransform = async (c, fp, o) => {
-      // cache.has(fp);
-      rewriteImports(c, resolver.requestToFile(fp), resolver);
-      console.log("vite rewrite", resolver.requestToFile(fp));
-      return {
-        code: undefined,
-        map: undefined,
-      };
-    };
+    // // let vite know about this file
+    // const viteCacheFile: ZipeScriptTransform = async (c, fp, o) => {
+    //   // cache.has(fp);
+    //   rewriteImports(c, resolver.requestToFile(fp), resolver);
+    //   console.log("vite rewrite", resolver.requestToFile(fp));
+    //   return {
+    //     code: undefined,
+    //     map: undefined,
+    //   };
+    // };
 
-    const pipeline = buildOutputPipeline(
-      dependencies,
-      [moduleRewrite, viteCacheFile],
-      {}
-    );
+    const pipeline = buildOutputPipeline(dependencies, [moduleRewrite], {});
 
     let postcssConfig: any = undefined;
     const postcssConfigPromise = loadPostcssConfig(root).then(
@@ -102,15 +73,8 @@ export function createViteSSR(
     watcher.on("change", async (p) => {
       const requestFile = resolver.fileToRequest(p);
       if (dependencies.has(requestFile)) {
-        // console.log("dep changed", requestFile);
-        // const prev = dependencies.get(requestFile)!;
-        // const externals = new Map<string, ZipeDependency>();
-        // console.log(prev);
-        // await parse(p, resolver, dependencies, externals, root);
-
         dependencies.delete(requestFile);
-        console.log("changed", p);
-        const module = await parse(
+        await parse(
           requestFile,
           "/",
           moduleResolver,
@@ -119,15 +83,6 @@ export function createViteSSR(
           sfcParser,
           transforms
         );
-
-        // const pathSet = dependencyMap.get(p);
-        // if (!pathSet) {
-        //   return;
-        // }
-        // for (const outdatedPath of pathSet) {
-        //   console.log("[cache] clearing cache", outdatedPath);
-        //   requestCache.delete(outdatedPath);
-        // }
       }
     });
 
@@ -151,33 +106,4 @@ export function createViteSSR(
       zipeSSR: builder,
     });
   };
-  /*
-
-  if (watcher) {
-    watcher.on("change", async (p) => {
-      const requestFile = resolver.fileToRequest(p);
-      if (dependencies.has(requestFile)) {
-        // console.log("dep changed", requestFile);
-        const prev = dependencies.get(requestFile)!;
-        const externals = new Map<string, DependencyPointer>();
-        console.log(prev);
-        dependencies.delete(requestFile);
-        await resolveZipeDependency(p, resolver, dependencies, externals, root);
-
-        const pathSet = dependencyMap.get(p);
-        if (!pathSet) {
-          return;
-        }
-        for (const outdatedPath of pathSet) {
-          console.log("[cache] clearing cache", outdatedPath);
-          requestCache.delete(outdatedPath);
-        }
-      }
-    });
-  } else {
-    // clear all cache
-    dependencyMap.clear();
-    dependencies.clear();
-  }
-  */
 }

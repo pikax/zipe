@@ -19,7 +19,6 @@ export function parseImportsExports(
     try {
       [imports, exports] = parse(content);
     } catch (e) {
-      console.log("e", { e, content });
       console.error(
         chalk.yellow(
           `[zipe] failed to parse ${chalk.cyan(

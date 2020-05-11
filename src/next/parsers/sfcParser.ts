@@ -10,6 +10,7 @@ import {
   ZipeScriptTransformOptions,
 } from "../transformers";
 import { SFCCompiler } from "../../utils";
+import hash_sum from "hash-sum";
 
 const debug = require("debug")("zipe:sfc");
 
@@ -46,7 +47,9 @@ export function buildSFCParser(
       publicPath
     );
 
-    const scoped = descriptor.styles.some((x) => x.scoped);
+    const scopeId = descriptor.styles.some((x) => x.scoped)
+      ? hash_sum(publicPath)
+      : undefined;
 
     if (!transformers[descriptor.script?.lang ?? "js"]) {
       console.warn(`[zipe] No transformer for `, descriptor.script?.lang);
@@ -72,7 +75,7 @@ export function buildSFCParser(
               ...options,
               compiler: options.compiler,
               template: options.template,
-              scoped,
+              scopeId,
             }
           )
         : Promise.resolve({ code: "", map: undefined }),
@@ -85,7 +88,7 @@ export function buildSFCParser(
               ...options,
               compiler: options.compiler,
               template: options.template,
-              scoped,
+              scopeId,
               ssr: true,
             }
           )
@@ -112,6 +115,7 @@ export function buildSFCParser(
       map: undefined,
       extra: {
         descriptor,
+        scopeId,
         script: scriptTransformed,
         template: templateTransformed,
         ssrTemplate: ssrTemplateTransformed,

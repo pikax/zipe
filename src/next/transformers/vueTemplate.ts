@@ -19,7 +19,7 @@ export const vueTemplateTransform: ZipeScriptTransform = async (
   extra: {
     compiler: SFCCompiler;
     template: SFCTemplateBlock;
-    scope: boolean | undefined;
+    scopeId: string | undefined;
   } & SFCTemplateCompileOptions
 ) => {
   const start = Date.now();
@@ -27,7 +27,7 @@ export const vueTemplateTransform: ZipeScriptTransform = async (
   const o = mergeOptions(extra, {
     compiler: undefined,
     compilerOptions: {
-      scopeId: extra.scope ? `data-v-${hash_sum(filePath)}` : null,
+      scopeId: extra.scopeId ? `data-v-${extra.scopeId}` : null,
     },
   });
 

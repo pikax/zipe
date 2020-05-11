@@ -24,6 +24,10 @@ export const vueStyleTransform: ZipeScriptTransform = async (
   const id = hash_sum(filePath);
   const style = extra.style;
 
+  if (style.scoped) {
+    console.log("scoped style", id, filePath);
+  }
+
   const { code, map, errors, modules } = await extra.compiler.compileStyleAsync(
     {
       ...extra,
@@ -43,7 +47,6 @@ export const vueStyleTransform: ZipeScriptTransform = async (
       if (typeof e === "string") {
         console.error(e);
       } else {
-        console.log("style", style);
         const lineOffset = style.loc.start.line - 1;
         if (e.line && e.column) {
           console.log(
@@ -74,8 +77,6 @@ export const vueStyleTransform: ZipeScriptTransform = async (
       }
     });
   }
-
-  // console.log("styles", style);
 
   debug(`${filePath} style compiled compiled in ${Date.now() - start}ms.`);
 

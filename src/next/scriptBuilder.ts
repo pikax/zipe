@@ -86,13 +86,11 @@ export function scriptBuilder(
       // TODO styles
     }
 
+    console.log('scope', scopeId, item.name)
     if (scopeId) {
       code += `\n${name}.__scopeId = "data-v-${scopeId}"\n`;
     }
 
-    if (ssr) {
-      console.log("ssrTem", ssrTemplate);
-    }
     if (ssr && ssrTemplate.code) {
       code += ssrTemplate.code;
 
