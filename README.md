@@ -55,7 +55,7 @@ npm install zipe
 Create a plugin and provide the entry file for the SSR
 
 ```js
-const { createViteSSR } = require("../dist");
+const { createViteSSR } = require("zipe");
 const { createServer } = require("vite");
 
 const SSR = createViteSSR(({ app, zipeSSR }) => {
