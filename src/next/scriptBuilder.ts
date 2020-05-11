@@ -7,9 +7,10 @@ export function scriptBuilder(
   item: ZipeModule,
   dependencyCache: ZipeCache<string, ZipeModule>,
   varNameResolver: (s: string) => string,
+  ssr = false,
   comments = false
 ) {
-  const name = varNameResolver(item.name);
+  const name = varNameResolver(item.module.path);
   // TODO check if this is actually correct, not sure if is worth to have script builder as a transformer
   const script = item.sfc.script.code
     ? item.sfc.script.code
@@ -23,8 +24,9 @@ export function scriptBuilder(
   // start block
   code += "\n{";
 
-  // console.log("exports", exports);
-  if (exports.length === 1 && exports[0] === "default") {
+  if (exports.length === 0) {
+    console.log("no exports");
+  } else if (exports.length === 1 && exports[0] === "default") {
     code += script.replace("export default", `${name} = `);
   } else {
     let replaced = script;
@@ -58,7 +60,7 @@ export function scriptBuilder(
   }
 
   if (item.sfc) {
-    const { scopeId, styles, template } = item.sfc;
+    const { scopeId, styles, template, ssrTemplate } = item.sfc;
 
     if (styles.length > 0) {
       // TODO do cssModules
@@ -79,15 +81,24 @@ export function scriptBuilder(
       code += `\n${name}.__scopeId = "data-v-${scopeId}"\n`;
     }
 
-    if (template) {
-      code += template.code.replace("export", "");
+    if (ssr) {
+      console.log("ssrTem", ssrTemplate);
+    }
+    if (ssr && ssrTemplate.code) {
+      code += ssrTemplate.code;
+
+      code += `\n${name}.ssrRender = ssrRender`;
+    } else if (template.code) {
+      code += template.code;
 
       code += `\n${name}.render = render`;
     }
 
-    // TODO pass this as options
-    code += `\n${name}.__hmrId = ${JSON.stringify(item.module.path)}`;
-    code += `\n${name}.__file = ${JSON.stringify(item.module.fullPath)}`;
+    if (!ssr) {
+      // TODO pass this as options
+      code += `\n${name}.__hmrId = ${JSON.stringify(item.module.path)}`;
+      code += `\n${name}.__file = ${JSON.stringify(item.module.fullPath)}`;
+    }
   }
 
   // end block

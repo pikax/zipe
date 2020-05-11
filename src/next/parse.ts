@@ -50,6 +50,7 @@ export interface ZipeModule {
   };
 
   code: string | null;
+  codeSSR: string | null;
   map: string | undefined;
 
   sfc: {
@@ -60,6 +61,7 @@ export interface ZipeModule {
       module: Record<string, string> | undefined;
     }[];
     template: { code: string; map: string | undefined };
+    ssrTemplate: { code: string; map: string | undefined };
     script: {
       code: string;
       map: string | undefined;
@@ -87,12 +89,12 @@ export async function parse(
   const name = posix.basename(module.name);
   const extension = posix.extname(module.path).slice(1);
 
-  if (dependenciesCache.has(module.path)) {
-    debug(`serving cached '${module.path}'`);
-    return dependenciesCache.get(module.path);
-  } else {
-    debug(`building ${module.path}`);
-  }
+  // if (dependenciesCache.has(module.path)) {
+  //   debug(`serving cached '${module.path}'`);
+  //   return dependenciesCache.get(module.path);
+  // } else {
+  //   debug(`building ${module.path}`);
+  // }
 
   const item: ZipeModule = {
     name,
@@ -100,6 +102,7 @@ export async function parse(
     extension,
     rawContent: "",
     code: null,
+    codeSSR: null,
     map: undefined,
     dependencies: [],
     fullDependencies: [],
@@ -117,6 +120,10 @@ export async function parse(
         map: undefined,
       },
       styles: [],
+      ssrTemplate: {
+        code: "",
+        map: undefined,
+      },
       template: {
         code: "",
         map: undefined,
@@ -137,19 +144,24 @@ export async function parse(
     item.sfc = extra;
 
     const [imports, exports] = parseImportsExports(
-      item.sfc.script.code,
+      [
+        item.sfc.script.code,
+        item.sfc.template.code,
+        item.sfc.ssrTemplate.code,
+      ].join("\n\n"),
       module.name,
       resolver
     );
 
-    console.log({
-      imports,
-      exports,
-      code: item.sfc.script.code,
-    });
+    // console.log({
+    //   imports,
+    //   exports,
+    //   // code: item.sfc.script.code,
+    // });
 
     item.sfc.script.dependencies = imports;
     item.sfc.script.exports = exports;
+    item.exports = exports;
 
     item.dependencies.push(...imports);
   } else {
@@ -158,12 +170,12 @@ export async function parse(
       let start = Date.now();
       // TODO add transformer options, probably build transformers?
       const { code, map } = await transformer(rawContent, filePath, {});
-      debug(`${filePath} transformed in ${Date.now() - start}ms.`);
+      // debug(`${filePath} transformed in ${Date.now() - start}ms.`);
 
       item.code = code;
       item.map = map as string;
       const [imports, exports] = parseImportsExports(
-        rawContent,
+        code,
         module.name,
         resolver
       );

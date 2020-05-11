@@ -10,7 +10,7 @@
 
 <script>
 import AppTest from "./views/Test.vue";
-import utils from "./src/utils.ts";
+// import utils from "./src/utils.ts";
 
 export default {
   components: {

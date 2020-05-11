@@ -77,6 +77,20 @@ export function buildSFCParser(
             }
           )
         : Promise.resolve({ code: "", map: undefined }),
+      descriptor.template
+        ? transformers["vue.template"](
+            descriptor.template.content,
+            publicPath,
+            transformOptions,
+            {
+              ...options,
+              compiler: options.compiler,
+              template: options.template,
+              scoped,
+              ssr: true,
+            }
+          )
+        : Promise.resolve({ code: "", map: undefined }),
 
       ...descriptor.styles.map((x) =>
         transformers["vue.style"](x.content, publicPath, transformOptions, {
@@ -90,6 +104,7 @@ export function buildSFCParser(
     const [
       scriptTransformed,
       templateTransformed,
+      ssrTemplateTransformed,
       ...stylesTransformed
     ] = await Promise.all(promises);
 
@@ -100,6 +115,7 @@ export function buildSFCParser(
         descriptor,
         script: scriptTransformed,
         template: templateTransformed,
+        ssrTemplate: ssrTemplateTransformed,
         styles: stylesTransformed,
       },
     };

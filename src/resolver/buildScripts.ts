@@ -67,7 +67,7 @@ export function buildScript(
   if (template) {
     code += template;
 
-    code += `\n${name}.render = render`;
+    code += `\n${name}.render = ssrRender`;
 
     code += `\n${name}.__hmrId = ${JSON.stringify(item.relativePath)}`;
     code += `\n${name}.__file = ${JSON.stringify(item.filePath)}`;

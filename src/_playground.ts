@@ -15,6 +15,7 @@ import { scriptBuilder } from "./next/scriptBuilder";
 import { filePathToVar } from "./utils";
 import { buildOutputPipeline } from "./next/outputPipeline";
 import { moduleRewrite } from "./next/transformers/moduleRewrite";
+import { outputSSR } from "./outputSSR";
 // let port = 4242;
 
 // // console.log("root", process.cwd());
@@ -87,6 +88,24 @@ const zipePlugin: Plugin = ({
         root,
       },
     });
+
+    if (ctx.path === "/output") {
+      const filePath = "/App.vue"; //resolver.requestToFile("/playground/App.vue"); // get the full path
+      const o = await outputSSR(
+        filePath,
+        moduleResolver,
+        cache,
+        dependencies,
+        sfcParser,
+        pipeline,
+        { ...scriptTransforms, ...ViteTransformers },
+        [],
+        () => Promise.resolve("")
+      );
+
+      ctx.body = o; //.replace("/@modules/", "");
+      return;
+    }
 
     if (ctx.path === "/pipeline") {
       // const filePath = "/playground/App.vue"; //resolver.requestToFile("/playground/App.vue"); // get the full path

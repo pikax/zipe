@@ -13,3 +13,6 @@ export function resolveCompiler(cwd: string): typeof sfcCompiler {
   // return require(resolveVue(cwd).compiler);
   return sfcCompiler;
 }
+export function escapeRegExp(string) {
+  return string.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+}

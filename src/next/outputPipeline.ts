@@ -18,7 +18,7 @@ export function buildOutputPipeline(
 ) {
   // TODO pipeline cache
 
-  return async (module: ZipeModule) => {
+  return async (module: ZipeModule, ssr: boolean) => {
     // NOTE probably await dependencies?
 
     const start = Date.now();
@@ -46,10 +46,12 @@ export function buildOutputPipeline(
     // append scripts together
     for (let i = scripts.length - 1; i >= 0; --i) {
       const script = scripts[i];
+      console.log("script", script.name, ssr);
       const snippet = scriptBuilder(
         scripts[i],
         dependenciesCache,
         filePathToVar,
+        ssr,
         comments
       );
 

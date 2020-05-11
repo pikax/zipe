@@ -39,7 +39,6 @@ export const vueTemplateTransform: ZipeScriptTransform = async (
     },
     filename: filePath,
     inMap: extra.template.map,
-    ssr: true,
   });
 
   if (errors.length) {
@@ -62,10 +61,12 @@ export const vueTemplateTransform: ZipeScriptTransform = async (
     });
   }
 
+  const output = code.replace("export ", "");
+
   debug(`${filePath} template compiled in ${Date.now() - start}ms.`);
 
   return {
-    code,
+    code: output,
     map,
   };
 };

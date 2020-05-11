@@ -3,9 +3,14 @@ import {
   hmrClientId,
 } from "vite/dist/server/serverPluginHmr";
 import { StyleHeader } from "./resolver/processSFC";
+import { createApp, createSSRApp, hydrate } from "vue";
+
+createApp;
 
 export function renderToSSRApp(
   htmlHydrated: string,
+  appName: string,
+  runtimeName: string, //aka vue module name
   scriptSPA: string,
   styles: StyleHeader[]
 ) {
@@ -38,12 +43,11 @@ export function renderToSSRApp(
     <div id="app">${htmlHydrated}</div>
     ${devInjectionCode}
     <script type="module">
-      // import { createSSRApp } from "vue";
       ${devStyleUpdateInjection}
 
       ${scriptSPA}
 
-      _____modules_vue_.createSSRApp(_ZIPE_APP___).mount("#app");
+      ${runtimeName}.createSSRApp(${appName}).mount("#app");
     </script>
   </body>
 </html>
