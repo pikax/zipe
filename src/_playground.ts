@@ -2,7 +2,7 @@ import { createServer as createViteServer, Plugin } from "vite";
 import { ssrBuild } from "./ssrBuild";
 
 import * as viteZipe from "./vite";
-import { parse as zipeParse } from "./next/parse";
+import { parse as zipeParse, ZipeModule } from "./next/parse";
 import { buildMemoryCache } from "./next/cache";
 import { buildSFCParser } from "./next/parsers/sfcParser";
 import { resolveCompiler, loadPostcssConfig } from "vite/dist/utils";
@@ -11,6 +11,8 @@ import { posix } from "path";
 import { scriptTransforms } from "./next/transformers";
 import { scriptTransforms as ViteTransformers } from "./vite/transformers";
 import { init } from "es-module-lexer";
+import { scriptBuilder } from "./next/scriptBuilder";
+import { filePathToVar } from "./utils";
 // let port = 4242;
 
 // // console.log("root", process.cwd());
@@ -105,9 +107,24 @@ const zipePlugin: Plugin = ({
         sfcParser,
         { ...scriptTransforms, ...ViteTransformers }
       );
-      console.log(`${filePath} served in ${Date.now() - start}ms.`);
+      const deps = await ss.dependenciesPromise;
+      console.log(`${filePath} parsed in ${Date.now() - start}ms.`);
 
-      ctx.body = ss;
+      // const deps: ZipeModule[] = [
+      //   ss,
+      //   ...(ss.fullDependencies
+      //     .filter((x) => !x.dynamic)
+      //     .map((x) => dependencies.get<ZipeModule>(x.module))
+      //     .filter(Boolean) as ZipeModule[]),
+      // ];
+
+      // ctx.body = deps!.map((x) =>
+      //   scriptBuilder(x, dependencies, filePathToVar, true)
+      // )[1];
+      // ctx.body = [ss.dependencies, ss.fullDependencies];
+
+      // ctx.body = deps![1];
+      ctx.body = scriptBuilder(deps![1], dependencies, filePathToVar, true)
       return;
     }
     await next();

@@ -57,8 +57,8 @@ export interface ZipeModule {
     styles: {
       code: string;
       map: string | undefined;
-      modules: Record<string, string> | undefined;
-    };
+      module: Record<string, string> | undefined;
+    }[];
     template: { code: string; map: string | undefined };
     script: {
       code: string;
@@ -71,7 +71,7 @@ export interface ZipeModule {
   exports: string[];
 
   // promise of all dependencies, useful to await if every single dependency is sorted
-  dependenciesPromise: Promise<ZipeDependency[]> | null;
+  dependenciesPromise: Promise<ZipeModule[]> | null;
 }
 
 export async function parse(
@@ -114,11 +114,7 @@ export async function parse(
         exports: [],
         map: undefined,
       },
-      styles: {
-        code: "",
-        map: undefined,
-        modules: undefined,
-      },
+      styles: [],
       template: {
         code: "",
         map: undefined,
@@ -159,7 +155,7 @@ export async function parse(
       item.code = code;
       item.map = map as string;
       const [imports, exports] = parseImportsExports(
-        item.sfc.script.code,
+        rawContent,
         module.name,
         resolver
       );
@@ -174,7 +170,7 @@ export async function parse(
   }
 
   item.fullDependencies.push(...item.dependencies);
-  const promises = [];
+  const promises: Promise<ZipeModule>[] = [];
   for (const dependency of item.dependencies.filter((x) => !x.info.module)) {
     promises.push(
       parse(
@@ -188,11 +184,13 @@ export async function parse(
       ).then((x) => {
         item.extra.styles.push(...x.extra.styles);
         item.fullDependencies.push(...x.fullDependencies);
+
+        return x;
       })
     );
   }
 
-  await Promise.all(promises);
+  item.dependenciesPromise = Promise.all(promises);
 
   return item;
 }
