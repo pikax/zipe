@@ -68,5 +68,5 @@ export const vueTemplateTransform: ZipeScriptTransform = async (
   return {
     code: output,
     map,
-  };
+  } as any;
 };

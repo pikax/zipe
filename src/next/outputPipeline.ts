@@ -78,7 +78,7 @@ export function buildOutputPipeline(
       const start = Date.now();
       const { code: transformed } = await transform(
         code,
-        module.name,
+        module.module.path,
         options,
         {
           modules: scripts,
@@ -86,7 +86,7 @@ export function buildOutputPipeline(
           filePathToVar,
         }
       );
-      code = transformed;
+      if (transformed) code = transformed;
 
       debugTransform(`${module.name} transform in ${Date.now() - start}ms.`);
     }

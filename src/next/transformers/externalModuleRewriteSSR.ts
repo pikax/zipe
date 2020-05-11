@@ -1,6 +1,5 @@
 import { ZipeScriptTransform } from "../transformers";
-import { ZipeModule, ZipeDependency } from "../parse";
-import { escapeRegExp } from "../../utils";
+import { ZipeModule } from "../parse";
 const debug = require("debug")("zipe:transform:moduleRewriteSSR");
 
 // rewrites external modules to variables, server script

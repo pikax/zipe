@@ -8,10 +8,13 @@ export function buildViteCache(resolver: InternalResolver): ZipeCache<string> {
       return cachedRead(null, resolver.requestToFile(k)) as any;
     },
     set(k, v) {
-      throw new Error("Cannot set on ViteCache");
+      cachedRead(null, resolver.requestToFile(k));
     },
     async has(k) {
       return !!(await cachedRead(null, resolver.requestToFile(k)));
+    },
+    delete(k) {
+      return;
     },
   };
 }

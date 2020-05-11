@@ -1,5 +1,6 @@
 import { parse } from "@vue/compiler-sfc";
 import * as sfcCompiler from "@vue/compiler-sfc";
+import { resolveVue } from "vite/dist/utils";
 
 export type SFCCompiler = typeof sfcCompiler;
 export type SFCParseResult = ReturnType<typeof parse>;
@@ -10,6 +11,6 @@ export const externalToVar = (p: string) => "_" + filePathToVar(p) + "_";
 
 export function resolveCompiler(cwd: string): typeof sfcCompiler {
   // TODO change to the line bellow
-  // return require(resolveVue(cwd).compiler);
-  return sfcCompiler;
+  return require(resolveVue(cwd).compiler);
+  // return sfcCompiler;
 }

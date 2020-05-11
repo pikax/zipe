@@ -1,5 +1,4 @@
 import chalk from "chalk";
-
 import { ZipeParser } from "../parser";
 import {
   SFCParseOptions,

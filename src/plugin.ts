@@ -1,5 +1,5 @@
 import { init as initLexer } from "es-module-lexer";
-import { Plugin, ServerPlugin, ServerPluginContext } from "vite";
+import { ServerPlugin, ServerPluginContext, rewriteImports } from "vite";
 import { ssrBuild } from "./ssrBuild";
 import resolve from "resolve-from";
 import { buildViteCache, buildViteModuleResolver } from "./vite";
@@ -8,11 +8,9 @@ import { buildOutputPipeline } from "./next/outputPipeline";
 import { moduleRewrite } from "./next/transformers/moduleRewrite";
 import { loadPostcssConfig, resolveCompiler } from "vite/dist/utils";
 import { buildSFCParser } from "./next/parsers/sfcParser";
-import postcssrc from "postcss-load-config";
 import { outputSSR } from "./outputSSR";
-import { scriptTransforms } from "./next/transformers";
+import { scriptTransforms, ZipeScriptTransform } from "./next/transformers";
 import { scriptTransforms as ViteTransformers } from "./vite/transformers";
-import { ZipeDependency, parse } from "./next/parse";
 
 export function createZipePrerender(options?: {
   component: string;
@@ -51,7 +49,22 @@ export function createViteSSR(
     const moduleResolver = buildViteModuleResolver(resolver, root);
     const dependencies = buildMemoryCache();
 
-    const pipeline = buildOutputPipeline(dependencies, [moduleRewrite], {});
+    // let vite know about this file
+    const viteCacheFile: ZipeScriptTransform = async (c, fp, o) => {
+      // cache.has(fp);
+      rewriteImports(c, resolver.requestToFile(fp), resolver);
+      console.log("vite rewrite", resolver.requestToFile(fp));
+      return {
+        code: undefined,
+        map: undefined,
+      };
+    };
+
+    const pipeline = buildOutputPipeline(
+      dependencies,
+      [moduleRewrite, viteCacheFile],
+      {}
+    );
 
     let postcssConfig: any = undefined;
     const postcssConfigPromise = loadPostcssConfig(root).then(
@@ -90,20 +103,21 @@ export function createViteSSR(
       const requestFile = resolver.fileToRequest(p);
       if (dependencies.has(requestFile)) {
         // console.log("dep changed", requestFile);
-        const prev = dependencies.get(requestFile)!;
+        // const prev = dependencies.get(requestFile)!;
         // const externals = new Map<string, ZipeDependency>();
-        console.log(prev);
+        // console.log(prev);
         // await parse(p, resolver, dependencies, externals, root);
 
         dependencies.delete(requestFile);
+        console.log("changed", p);
         const module = await parse(
-          p,
+          requestFile,
           "/",
           moduleResolver,
           cache,
           dependencies,
           sfcParser,
-          scriptTransforms
+          transforms
         );
 
         // const pathSet = dependencyMap.get(p);

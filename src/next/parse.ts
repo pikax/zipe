@@ -1,13 +1,17 @@
-import { StyleHeader } from "../resolver/processSFC";
 import { ModuleInformation, ModuleResolver } from "./moduleResolver";
 import { ZipeCache } from "./cache";
 import { posix } from "path";
 import { ZipeParser } from "./parser";
 import { ZipeScriptTransform } from "./transformers";
-import { resolveImport, parseImportsExports } from "../parseImports";
+import { parseImportsExports } from "../parseImports";
 import { SFCDescriptor } from "@vue/compiler-sfc";
 
 const debug = require("debug")("zipe:parse");
+
+export interface StyleHeader {
+  id: string;
+  href: string;
+}
 
 export interface ZipeDependency {
   // ./App.vue
@@ -142,7 +146,6 @@ export async function parse(
     },
     dependenciesPromise: null,
   };
-  dependenciesCache.set(module.path, item);
 
   // console.log('module item', module )
   const rawContent = (item.rawContent = await fileCache.get<string>(
@@ -163,7 +166,7 @@ export async function parse(
       module.name,
       resolver
     );
-    
+
     item.sfc.script.dependencies = imports;
     item.sfc.script.exports = exports;
     item.exports = exports;
@@ -175,10 +178,15 @@ export async function parse(
       let start = Date.now();
       // TODO add transformer options, probably build transformers?
       const { code, map } = await transformer(rawContent, filePath, {});
-      item.code = code;
+
+      if (code) {
+        item.code = code;
+      } else {
+        console.error(`[zipe] ${extension} transformer returned undefined`);
+      }
       item.map = map as string;
       const [imports, exports] = parseImportsExports(
-        code,
+        code!,
         module.name,
         resolver
       );
@@ -218,6 +226,8 @@ export async function parse(
     item,
     ...x.flat(),
   ]);
+
+  dependenciesCache.set(module.path, item);
 
   return item;
 }

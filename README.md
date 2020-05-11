@@ -6,8 +6,6 @@
 
 [vite](https://github.com/vuejs/vite) is "fast"⚡ but how fast can it render on the server?
 
-> **Spoiler alert**: really fast!
-
 `zipe` will compile the components on the fly and cache them, if the component change it will refresh the cache, making it super quick to render.
 
 The HMR is the same as `vite` so no more page reloads, only the changed component updates.
@@ -27,9 +25,11 @@ The HMR is the same as `vite` so no more page reloads, only the changed componen
 - css scope seems not to be working when doing SSR
 - No JSX/TSX support
 - Async imports are not SSR
+- Custom HTML index file or `vue-router`
 
 ## TODO
 
+- Custom HTML template
 - `vue-router` support (some limitations, for example adding new routes on the fly and such)
 - `source-maps` currently source maps don't exist, may need help here.
 - `lifecycle hooks` with composition-api
@@ -54,31 +54,27 @@ npm install zipe
 Create a plugin and provide the entry file for the SSR
 
 ```js
-const { ssrBuild } = require("../dist");
+const { createViteSSR } = require("../dist");
 const { createServer } = require("vite");
 
-const zipePlugin: Plugin = ({
-  root, // project root directory, absolute path
-  app, // Koa app instance
-  resolver, // resolve file
-  server, // raw http server instance
-  watcher, // chokidar file watcher instance
-}) => {
+const SSR = createViteSSR(({ app, zipeSSR }) => {
   app.use(async (ctx, next) => {
     if (ctx.path === "/") {
-      // NOTE is is using the root folder
-      const filePath = resolver.requestToFile("/App.vue"); // get the full path
-      const html = await ssrBuild(filePath, resolver, root, watcher); // build HTML
-      ctx.body = html; //assign the html output
+      // return the HTML
+      ctx.body = await zipeSSR("/App.vue"); // component path relative to root
       return;
     }
+    if (ctx.path === "/output") {
+      ctx.body = await zipeSSR("/views/Test.vue");
+      return;
+    }
+
     await next();
   });
-};
+});
 
 createServer({
-  // root: process.cwd(),
-  plugins: [zipePlugin],
+  plugins: [SSR],
 }).listen(4242);
 ```
 

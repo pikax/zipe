@@ -2,8 +2,8 @@ import {
   hmrClientPublicPath,
   hmrClientId,
 } from "vite/dist/server/serverPluginHmr";
-import { StyleHeader } from "./resolver/processSFC";
-import { createApp, createSSRApp, hydrate } from "vue";
+import { createApp } from "vue";
+import { StyleHeader } from "./next/parse";
 
 createApp;
 
@@ -24,7 +24,6 @@ export function renderToSSRApp(
 
   const devStyleUpdateInjection = `\nimport { updateStyle } from "/${hmrClientId}"`;
 
-  console.log("sty", styles);
   const styleHeader = styles
     .map(
       (x) =>

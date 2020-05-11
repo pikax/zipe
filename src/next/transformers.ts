@@ -12,7 +12,10 @@ export type ZipeScriptTransform = (
   filePath: string,
   options: Partial<ZipeScriptTransformOptions>,
   extra?: Record<string, any>
-) => Promise<{ code: string; map: string | RawSourceMap | undefined }>;
+) => Promise<{
+  code: string | undefined;
+  map: string | RawSourceMap | undefined;
+}>;
 
 // TODO add transformers for SSR
 

@@ -1,6 +1,5 @@
 import { ZipeScriptTransform } from "../transformers";
-import { ZipeModule, ZipeDependency } from "../parse";
-import { escapeRegExp } from "../../utils";
+import { ZipeModule } from "../parse";
 const debug = require("debug")("zipe:transform:moduleRewrite");
 
 // rewrites the modules to variables
@@ -34,13 +33,6 @@ export const moduleRewrite: ZipeScriptTransform = async (
   // const externals = module.fullDependencies.filter((x) => x.module);
   const internals = module.fullDependencies.filter((x) => !x.info.module);
 
-  // TODO check if we need to do  this, this could be a rewrite for client side only code,
-  // since externals will be passed in methods :thinking:
-  // for (const external of externals) {
-  // }
-
-  // console.log("inter", { internals });
-
   for (const { info, importLine, importPath } of internals) {
     const varName = filePathToVar(info.path);
     const expected = importLine
@@ -50,7 +42,6 @@ export const moduleRewrite: ZipeScriptTransform = async (
       .replace(/ as /g, " : ")
       .replace(importPath, varName);
     code = code.replace(importLine, expected);
-    // code = code.replace(new RegExp(escapeRegExp(importLine), "g"), expected);
   }
 
   debug(`${filePath} module rewrite in ${Date.now() - start}ms.`);
