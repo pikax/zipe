@@ -13,6 +13,8 @@ import { scriptTransforms as ViteTransformers } from "./vite/transformers";
 import { init } from "es-module-lexer";
 import { scriptBuilder } from "./next/scriptBuilder";
 import { filePathToVar } from "./utils";
+import { buildOutputPipeline } from "./next/outputPipeline";
+import { moduleRewrite } from "./next/transformers/moduleRewrite";
 // let port = 4242;
 
 // // console.log("root", process.cwd());
@@ -54,6 +56,8 @@ const zipePlugin: Plugin = ({
   const moduleResolver = viteZipe.buildViteModuleResolver(resolver, root);
   const dependencies = buildMemoryCache();
 
+  const pipeline = buildOutputPipeline(dependencies, [moduleRewrite], {});
+
   app.use(async (ctx, next) => {
     await init;
     const postcssConfig = await loadPostcssConfig(root);
@@ -83,6 +87,33 @@ const zipePlugin: Plugin = ({
         root,
       },
     });
+
+    if (ctx.path === "/pipeline") {
+      // const filePath = "/playground/App.vue"; //resolver.requestToFile("/playground/App.vue"); // get the full path
+      const filePath = "/App.vue"; //resolver.requestToFile("/playground/App.vue"); // get the full path
+      // const filePath = "/src/utils.ts"; //resolver.requestToFile("/playground/App.vue"); // get the full path
+      const start = Date.now();
+      // console.log("building", filePath);
+      const ss = await zipeParse(
+        filePath,
+        "/",
+        moduleResolver,
+        cache,
+        dependencies,
+        sfcParser,
+        { ...scriptTransforms, ...ViteTransformers }
+      );
+      const deps = await ss.dependenciesPromise;
+      console.log(`${filePath} parsed in ${Date.now() - start}ms.`);
+
+      const o = await pipeline(ss);
+
+      ctx.body = o;
+
+      console.log(`${filePath} served in ${Date.now() - start}ms.`);
+
+      return;
+    }
 
     if (ctx.path === "/") {
       // NOTE is is using the root folder
@@ -124,7 +155,10 @@ const zipePlugin: Plugin = ({
       // ctx.body = [ss.dependencies, ss.fullDependencies];
 
       // ctx.body = deps![1];
-      ctx.body = scriptBuilder(deps![1], dependencies, filePathToVar, true)
+      ctx.body = scriptBuilder(deps![1], dependencies, filePathToVar, true);
+
+      console.log(`${filePath} served in ${Date.now() - start}ms.`);
+
       return;
     }
     await next();

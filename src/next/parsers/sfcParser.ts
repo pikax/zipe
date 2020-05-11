@@ -52,7 +52,6 @@ export function buildSFCParser(
     if (!transformers[descriptor.script?.lang ?? "js"]) {
       console.warn(`[zipe] No transformer for `, descriptor.script?.lang);
     }
-
     const promises = [
       descriptor.script
         ? transformers[descriptor.script.lang ?? "js"]

@@ -75,6 +75,7 @@ export function parseImportsExports(
               fullPath: undefined as any, //TODO FIX ME
               name: id,
               path: id,
+              module: true,
             },
           });
           console.log(`[zipe] ignored dynamic import(${id})`);

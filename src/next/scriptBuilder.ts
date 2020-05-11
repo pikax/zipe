@@ -23,7 +23,7 @@ export function scriptBuilder(
   // start block
   code += "\n{";
 
-  console.log("exports", exports);
+  // console.log("exports", exports);
   if (exports.length === 1 && exports[0] === "default") {
     code += script.replace("export default", `${name} = `);
   } else {

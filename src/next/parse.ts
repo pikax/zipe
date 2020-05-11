@@ -87,10 +87,12 @@ export async function parse(
   const name = posix.basename(module.name);
   const extension = posix.extname(module.path).slice(1);
 
-  // if (dependenciesCache.has(module.path)) {
-  //   debug(`serving cached '${module.path}'`);
-  //   return dependenciesCache.get(module.path);
-  // }
+  if (dependenciesCache.has(module.path)) {
+    debug(`serving cached '${module.path}'`);
+    return dependenciesCache.get(module.path);
+  } else {
+    debug(`building ${module.path}`);
+  }
 
   const item: ZipeModule = {
     name,
@@ -139,6 +141,12 @@ export async function parse(
       module.name,
       resolver
     );
+
+    console.log({
+      imports,
+      exports,
+      code: item.sfc.script.code,
+    });
 
     item.sfc.script.dependencies = imports;
     item.sfc.script.exports = exports;
