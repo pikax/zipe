@@ -15,6 +15,7 @@ The HMR is the same as `vite` so no more page reloads, only the changed componen
 - Proof of concept
 - SSR with HMR
 - importing js/ts files in SFC
+- CSS scoped
 
 ## NOT working
 
