@@ -7363,6 +7363,11 @@ void-elements@^2.0.1:
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-2.0.1.tgz#c066afb582bb1cb4128d60ea92392e94d5e9dbec"
   integrity sha1-wGavtYK7HLQSjWDqkjkulNXp2+w=
 
+vue-composable@^1.0.0-alpha.32:
+  version "1.0.0-alpha.32"
+  resolved "https://registry.yarnpkg.com/vue-composable/-/vue-composable-1.0.0-alpha.32.tgz#cd9c75aacf29bc0e1ac9d779f17bd9fa7a3e493c"
+  integrity sha512-tLMihNpEBiK/F1R9pE5YPVlj6wkSlnVupvER5xrwUgMek0Uj8eNWCH6pF8VYnnXywWiZROB+vSvPCR7fYpyuHg==
+
 vue-router@^4.0.0-alpha.10:
   version "4.0.0-alpha.10"
   resolved "https://registry.yarnpkg.com/vue-router/-/vue-router-4.0.0-alpha.10.tgz#d27fc8c0713b6198f9c50af9b9e8be15f311f869"
