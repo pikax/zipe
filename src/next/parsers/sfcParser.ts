@@ -98,7 +98,10 @@ export function buildSFCParser(
         transformers["vue.style"](x.content, publicPath, transformOptions, {
           ...options,
           compiler: options.compiler,
-          style: x,
+          style: {
+            ...x,
+            ...options.style,
+          },
         })
       ),
     ];

@@ -2,6 +2,7 @@ import slash from "slash";
 import { posix } from "path";
 import { ModuleResolver, ModuleInformation } from "./next";
 import fs from "fs-extra";
+import chalk from "chalk";
 
 const bareImportRE = /^[^\/\.]/;
 const fileExtensionRE = /\.\w+$/;
@@ -33,7 +34,9 @@ export const resolveImport = (
 
       if (module <= 0) {
         let webId = id;
-        if (!id.endsWith(".js")) webId += ".js";
+        if (!id.endsWith(".js")) {
+          webId += ".js";
+        }
         const p = posix.join(webModuleFolder, webId);
         if (fs.pathExistsSync(p)) {
           webModules.add(id);

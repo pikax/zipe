@@ -52,10 +52,12 @@ export const vueTemplateTransform: ZipeScriptTransform = async (
           )
         );
         console.error(chalk.yellow(e.message));
-        const original = extra.template.map!.sourcesContent![0];
-        console.error(
-          generateCodeFrame(original, e.loc!.start.offset, e.loc!.end.offset)
-        );
+        if (extra.template.map) {
+          const original = extra.template.map.sourcesContent![0];
+          console.error(
+            generateCodeFrame(original, e.loc!.start.offset, e.loc!.end.offset)
+          );
+        }
       }
     });
   }

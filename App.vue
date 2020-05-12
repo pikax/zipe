@@ -12,14 +12,14 @@
 <script>
 import { defineAsyncComponent } from "vue";
 // import AppTest from "./views/Test.vue";
-// import utils from "./src/utils.ts";
+// import utils from "./src/utils.ts"; 
 
 export default {
   components: {
     // AppTest
     AppTest: defineAsyncComponent(() => import("./views/Test.vue")),
   },
-  data: () => ({ count: 0 }),
+  data: () => ({ count: 0 }), 
 };
 </script>
 

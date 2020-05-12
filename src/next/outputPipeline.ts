@@ -179,7 +179,7 @@ export function buildOutputPipeline(
       }
 
       code += `${snippet}`;
-      
+
       if (comments) {
         code += `\n// end ${script.name} \n`;
       }

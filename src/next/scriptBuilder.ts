@@ -32,16 +32,17 @@ export function scriptBuilder(
   let code = `let ${name}`;
 
   // start block
-  code += "\n{";
+  code += "\n{\n";
 
   if (exports.length === 0) {
     debug(`${name} no exports`);
 
     // if is vue probably there's no `script` block
     if (item.extension.endsWith("vue")) {
-      code += item.sfc.script.code || `\n${name} = {}\n`;
+      code += item.sfc.script.code || `${name} = {}\n`;
     } else {
-      code = script;
+      // console.log('scriptBuilder ', script)
+      code += `${name} = {}`;
     }
     // if(item.sfc.template.code || item.sfc.styles.some(x=>x.code))
   } else if (exports.length === 1 && exports[0] === "default") {
@@ -133,6 +134,8 @@ export function scriptBuilder(
   }
 
   debug(`${item.name} script built in ${Date.now() - start}ms.`);
+
+  console.log("b uil", item.name, code);
 
   return code;
 }

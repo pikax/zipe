@@ -5,6 +5,9 @@ import { ZipeParser } from "./parser";
 import { ZipeScriptTransform } from "./transformers";
 import { parseImportsExports } from "../parseImports";
 import { SFCDescriptor } from "@vue/compiler-sfc";
+import hash_sum from "hash-sum";
+import { hmrClientId } from "vite/dist/server/serverPluginHmr";
+import chalk from "chalk";
 
 const debug = require("debug")("zipe:parse");
 
@@ -198,6 +201,28 @@ export async function parse(
       item.exports.push(...exports);
 
       debug(`${filePath} imports parsed in ${Date.now() - start}ms.`);
+    } else if (extension === "css") {
+      const id = hash_sum(filePath);
+
+      item.extra.styles.push({
+        href: filePath + "?raw",
+        id,
+      });
+
+      item.code =
+        `import { updateStyle } from "${hmrClientId}"\n` +
+        `updateStyle("${id}", "${filePath}?raw")\n`;
+
+      item.rawContent = item.code;
+      item.sfc.script.code = item.code;
+      item.processed.code = item.code;
+      item.processed.ssr = "\n// no ssr\n";
+
+      // console.log(chalk.green("found css module"));
+
+      item.dependenciesPromise = Promise.resolve([item]);
+
+      return item;
     } else {
       console.warn(`[zipe] no transformer found for ${filePath}`);
     }

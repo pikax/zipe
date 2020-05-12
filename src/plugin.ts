@@ -11,6 +11,7 @@ import { scriptTransforms, ZipeScriptTransform } from "./next/transformers";
 import { scriptTransforms as ViteTransformers } from "./vite/transformers";
 import { parse } from "./next/parse";
 import { ParameterizedContext, DefaultState, DefaultContext } from "koa";
+import { parse as parseUrl } from "url";
 
 export type ZipeBuilder = (
   component: string,
@@ -23,7 +24,7 @@ export type ZipeViteContext = { zipeSSR: ZipeBuilder } & ServerPluginContext;
 export function createViteSSR(
   plugin: (ctx: ZipeViteContext) => void
 ): ServerPlugin {
-  return (ctx) => {
+  return async (ctx) => {
     const { root, watcher, resolver } = ctx;
     const cache = buildViteCache(resolver);
     const moduleResolver = buildViteModuleResolver(resolver, root);
@@ -43,9 +44,11 @@ export function createViteSSR(
     const pipeline = buildOutputPipeline(dependencies, [moduleRewrite], {});
 
     let postcssConfig: any = undefined;
-    const postcssConfigPromise = loadPostcssConfig(root).then(
-      (x) => (postcssConfig = x as any)
-    );
+    const postcssConfigPromise = await loadPostcssConfig(root).then((x) => {
+      postcssConfig = x as any;
+    });
+
+    postcssConfig = await loadPostcssConfig(root);
 
     const transforms = { ...scriptTransforms, ...ViteTransformers };
 
@@ -93,7 +96,7 @@ export function createViteSSR(
 
     const builder: ZipeBuilder = async (
       component,
-      context?: Koa,
+      context,
       appUses?: AppEnhancement[]
     ) => {
       await postcssConfigPromise;

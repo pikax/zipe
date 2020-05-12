@@ -63,16 +63,18 @@ export const vueStyleTransform: ZipeScriptTransform = async (
         const cleanMsg = e.message.replace(filenameRE, "");
         console.error(chalk.yellow(cleanMsg));
         if (e.line && e.column && cleanMsg.split(/\n/g).length === 1) {
-          const original = style.map!.sourcesContent![0];
-          const offset =
-            original
-              .split(/\r?\n/g)
-              .slice(0, e.line + lineOffset - 1)
-              .map((l) => l.length)
-              .reduce((total, l) => total + l + 1, 0) +
-            e.column -
-            1;
-          console.error(generateCodeFrame(original, offset, offset + 1));
+          if (style.map) {
+            const original = style.map.sourcesContent![0];
+            const offset =
+              original
+                .split(/\r?\n/g)
+                .slice(0, e.line + lineOffset - 1)
+                .map((l) => l.length)
+                .reduce((total, l) => total + l + 1, 0) +
+              e.column -
+              1;
+            console.error(generateCodeFrame(original, offset, offset + 1));
+          }
         }
       }
     });

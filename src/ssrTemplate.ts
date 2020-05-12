@@ -35,12 +35,13 @@ export function renderToSSRApp(
     <meta charset="UTF-8" />
     <title>Vite App</title>
     ${styleHeader}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
   </head>
   <body>
     <div id="${containerId}">${htmlHydrated}</div>
     ${devInjectionCode}
     <script type="module">\n${scriptSPA}</script>
-    </script>
   </body>
 </html>
   `;
