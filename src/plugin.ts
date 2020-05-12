@@ -6,7 +6,7 @@ import { buildOutputPipeline } from "./next/outputPipeline";
 import { moduleRewrite } from "./next/transformers/moduleRewrite";
 import { loadPostcssConfig, resolveCompiler } from "vite/dist/utils";
 import { buildSFCParser } from "./next/parsers/sfcParser";
-import { outputSSR } from "./outputSSR";
+import { outputSSR, AppEnhancement } from "./outputSSR";
 import { scriptTransforms, ZipeScriptTransform } from "./next/transformers";
 import { scriptTransforms as ViteTransformers } from "./vite/transformers";
 import { parse } from "./next/parse";
@@ -86,7 +86,10 @@ export function createViteSSR(
       }
     });
 
-    const builder: ZipeBuilder = async (component) => {
+    const builder: ZipeBuilder = async (
+      component,
+      appUses?: AppEnhancement[]
+    ) => {
       await postcssConfigPromise;
 
       return outputSSR(
@@ -97,7 +100,8 @@ export function createViteSSR(
         sfcParser,
         pipeline,
         transforms,
-        []
+        [],
+        appUses ?? []
       );
     };
 
