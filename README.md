@@ -20,6 +20,7 @@ The HMR is the same as `vite` so no more page reloads, only the changed componen
 
 ## NOT working
 
+- HMR on the first file change, only works when is more than 1 save
 - No `build` support for now
 - No `router`
 - No source maps
