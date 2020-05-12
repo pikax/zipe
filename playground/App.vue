@@ -31,7 +31,7 @@ import TestModuleResolve from './TestModuleResolve.vue'
 // import TestPreprocessors from './TestPreprocessors.vue'
 // import TestSrcImport from './src-import/TestBlockSrcImport.vue'
 // import TestAssets from './TestAssets.vue'
-// import TestJsonImport from './TestJsonImport.vue'
+import TestJsonImport from './TestJsonImport.vue'
 import TestTs from './ts/TestTs.vue'
 // import TestJsx from './TestJsx.vue'
 

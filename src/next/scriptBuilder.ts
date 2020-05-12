@@ -71,7 +71,7 @@ export function scriptBuilder(
 
       // hasn't changed
       if (init === replaced) {
-        console.warn("unrecognised export", e);
+        console.warn(chalk.yellow("unrecognised export", e));
       }
     });
     code += replaced;

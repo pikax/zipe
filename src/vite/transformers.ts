@@ -10,8 +10,16 @@ export const scriptTransforms: Record<string, ZipeScriptTransform> = {
     transform(content, filepath, { ...opts, loader: "jsx" }),
   tsx: (content, filepath, opts) =>
     transform(content, filepath, { ...opts, loader: "tsx" }),
-  json: (content, filepath, opts) =>
-    transform(content, filepath, { ...opts, loader: "json" }),
+  json: (content, filepath, opts) => {
+    // TODO add map
+    return Promise.resolve({
+      code: `export default JSON.parse(\`${JSON.stringify(
+        JSON.parse(content)
+      )}\`)`,
+      map: undefined,
+    });
+  },
+  // transform(content, filepath, { ...opts, loader: "json" }),
 
   // TODO more
 };
