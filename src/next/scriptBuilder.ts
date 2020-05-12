@@ -135,7 +135,5 @@ export function scriptBuilder(
 
   debug(`${item.name} script built in ${Date.now() - start}ms.`);
 
-  console.log("b uil", item.name, code);
-
   return code;
 }

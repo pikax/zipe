@@ -210,7 +210,7 @@ export async function parse(
       });
 
       item.code =
-        `import { updateStyle } from "${hmrClientId}"\n` +
+        // `import { updateStyle } from "${hmrClientId}"\n` +
         `updateStyle("${id}", "${filePath}?raw")\n`;
 
       item.rawContent = item.code;
@@ -221,6 +221,7 @@ export async function parse(
       // console.log(chalk.green("found css module"));
 
       item.dependenciesPromise = Promise.resolve([item]);
+      dependenciesCache.set(module.path, item);
 
       return item;
     } else {

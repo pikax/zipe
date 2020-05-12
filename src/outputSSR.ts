@@ -53,7 +53,11 @@ export async function outputSSR(
   );
   const deps = (await zipeModule.dependenciesPromise) || [];
 
-  if (appEnhancements.length > 0) {
+  if ((zipeModule as any).appEnhancements) {
+    appEnhancements = (zipeModule as any).appEnhancements;
+  } else if (appEnhancements.length > 0) {
+    (zipeModule as any).appEnhancements = appEnhancements;
+    // console.log("adding dependencies");
     const depsPromises: Promise<ZipeModule[]>[] = [];
     const eee: ZipeModule[] = [];
     for (const enhancement of appEnhancements) {
@@ -63,6 +67,9 @@ export async function outputSSR(
           "[zipe] found more than one import, only one import is supported"
         );
       }
+
+      console.log("found", dep);
+      //console.adding dependencies
       zipeModule.fullDependencies.unshift(dep[0]);
       zipeModule.dependencies.unshift(dep[0]);
       const dd = ((enhancement as any).__dep = dep[0]);
@@ -158,13 +165,24 @@ export async function outputSSR(
         enhance(app, ${name})
       }`;
       }
-      enhanceImports += enhancement.importLine + "\n";
+
+      if (dep.info.module === 0) {
+        // console.log("module type", dep.info);
+        const expected = enhancement.importLine
+          .replace("import * as", "let")
+          .replace("import", "let")
+          .replace("from", "=")
+          .replace(/ as /g, " : ")
+          .replace(enhancement.importLine, name);
+        enhanceImports += expected + "\n";
+      } else {
+        enhanceImports += enhancement.importLine + "\n";
+      }
     }
 
     enhanceClient = `function applyZipeEnhancements(app){
       ${enhanceClient}
     }`;
-    // console.warn(chalk.yellow("[zipe] ", enhance));
   }
 
   // TODO transforms for server and client should run in parallel
@@ -222,6 +240,7 @@ export async function outputSSR(
   // console.log('dxdada', xxx)
   let clientScript = `${xxx}\n${enhanceImports}\n${rawScriptPipeline.code}\n${enhanceClient}\n`;
 
+  // console.log(enhanceImports);
   clientScript = await runTransforms(
     clientScript,
     filePath,
@@ -232,6 +251,8 @@ export async function outputSSR(
     },
     clientTransforms
   );
+
+  // console.log(enhanceImports);
 
   // const htmlOutput = await
 
@@ -251,6 +272,16 @@ export async function outputSSR(
         })
       )
       .flat() ?? [];
+  styles.push(...zipeModule.extra.styles);
+  // console.log("styles deps", zipeModule.extra.styles);
+
+  styles.push(
+    ...zipeModule.fullDependencies
+      .map((x) => dependenciesCache.get(x.info.path) as ZipeModule)
+      .filter(Boolean)
+      .map((x) => x.extra.styles)
+      .flat()
+  );
 
   // append the createApp
   const containerId = "app";
