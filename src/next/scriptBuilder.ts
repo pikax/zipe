@@ -104,6 +104,7 @@ export function scriptBuilder(
       code += ssrTemplate.code;
 
       code += `\n${name}.ssrRender = ssrRender`;
+      // code += `\n${name}.render = ssrRender`;
     } else if (template.code) {
       code += template.code;
 
@@ -115,6 +116,11 @@ export function scriptBuilder(
       code += `\n${name}.__hmrId = ${JSON.stringify(item.module.path)}`;
       code += `\n${name}.__file = ${JSON.stringify(item.module.fullPath)}`;
     }
+  }
+
+  if (ssr) {
+    // store var reference to access post script run
+    code += `\n_____zipe_components["${name}"] = ${name}\n`;
   }
 
   // end block

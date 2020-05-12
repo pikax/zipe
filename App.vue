@@ -1,24 +1,25 @@
 <template>
   <h1>Hello Vite + Vue 3 + Zipe!</h1>
   <p>Edit ./App.vue to test hot module replacement (HMR) S.</p>
+  <router-view />
   <p>
     <span>Count is: {{ count }}</span>
     <button @click="count++">increment</button>
   </p>
   <app-test />
-</template> 
+</template>
 
 <script>
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent } from "vue";
 // import AppTest from "./views/Test.vue";
 // import utils from "./src/utils.ts";
 
 export default {
   components: {
     // AppTest
-    AppTest: defineAsyncComponent(()=>import("./views/Test.vue"))
+    AppTest: defineAsyncComponent(() => import("./views/Test.vue")),
   },
-  data: () => ({ count: 0 })
+  data: () => ({ count: 0 }),
 };
 </script>
 

@@ -10,8 +10,13 @@ import { outputSSR, AppEnhancement } from "./outputSSR";
 import { scriptTransforms, ZipeScriptTransform } from "./next/transformers";
 import { scriptTransforms as ViteTransformers } from "./vite/transformers";
 import { parse } from "./next/parse";
+import { ParameterizedContext, DefaultState, DefaultContext } from "koa";
 
-export type ZipeBuilder = (component: string) => Promise<string>;
+export type ZipeBuilder = (
+  component: string,
+  ctx?: ParameterizedContext<DefaultState, DefaultContext>,
+  enhances?: AppEnhancement[]
+) => Promise<string>;
 
 export type ZipeViteContext = { zipeSSR: ZipeBuilder } & ServerPluginContext;
 
@@ -88,6 +93,7 @@ export function createViteSSR(
 
     const builder: ZipeBuilder = async (
       component,
+      context?: Koa,
       appUses?: AppEnhancement[]
     ) => {
       await postcssConfigPromise;
@@ -101,7 +107,8 @@ export function createViteSSR(
         pipeline,
         transforms,
         [],
-        appUses ?? []
+        appUses ?? [],
+        context
       );
     };
 

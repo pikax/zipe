@@ -10,19 +10,22 @@ import { externalModuleRewriteSSR } from "./next/transformers/externalModuleRewr
 import { filePathToVar, stringToRegex } from "./utils";
 import { renderToString } from "@vue/server-renderer";
 import { renderToSSRApp } from "./ssrTemplate";
-import { createSSRApp, createApp, CreateAppFunction } from "vue";
+import { createSSRApp, createApp, CreateAppFunction, App } from "vue";
 import hash_sum from "hash-sum";
 import chalk from "chalk";
 import { ZipeOutputPipeline } from "./next/outputPipeline";
 import { resolveImport } from "./resolveImport";
 import { parseImportsExports } from "./parseImports";
+import { BaseRequest } from "koa";
 
-export interface AppEnhancement {
+export interface AppEnhancement<T = any> {
   importLine: string;
-  enhance: (
-    app: CreateAppFunction<Element>,
-    dependency: any
-  ) => CreateAppFunction<Element>;
+  enhance: (app: App<Element>, dependency: T) => void | any;
+  ssr?: (
+    app: App<Element>,
+    dependency: T,
+    ctx?: { request: BaseRequest }
+  ) => Promise<void> | void;
 }
 
 export async function outputSSR(
@@ -34,7 +37,8 @@ export async function outputSSR(
   { scriptPipeline, dynamicImportPipeline }: ZipeOutputPipeline,
   scriptTransforms: Record<string, ZipeScriptTransform>,
   outputTransforms: ZipeScriptTransform[],
-  appEnhancements: AppEnhancement[]
+  appEnhancements: AppEnhancement[],
+  app: { request: BaseRequest }
 ): Promise<string> {
   const start = Date.now();
 
@@ -50,6 +54,8 @@ export async function outputSSR(
   const deps = await zipeModule.dependenciesPromise;
 
   if (appEnhancements.length > 0) {
+    const depsPromises: Promise<ZipeModule[]>[] = [];
+    const eee: ZipeModule[] = [];
     for (const enhancement of appEnhancements) {
       const dep = parseImportsExports(enhancement.importLine, "/", resolver)[0];
       if (dep.length > 1) {
@@ -57,8 +63,8 @@ export async function outputSSR(
           "[zipe] found more than one import, only one import is supported"
         );
       }
-      zipeModule.fullDependencies.push(dep[0]);
-      zipeModule.dependencies.push(dep[0]);
+      zipeModule.fullDependencies.unshift(dep[0]);
+      zipeModule.dependencies.unshift(dep[0]);
       const dd = ((enhancement as any).__dep = dep[0]);
 
       if (!dependenciesCache.has(dd.info.path)) {
@@ -71,10 +77,31 @@ export async function outputSSR(
           sfcParser,
           scriptTransforms
         );
-        deps.push(m);
-        zipeModule.fullDependencies.push(...m.fullDependencies);
+        depsPromises.push(m.dependenciesPromise);
+        deps.unshift(m);
+
+        eee.push(m);
       }
     }
+    await Promise.all(depsPromises);
+    for (const i of eee) {
+      zipeModule.fullDependencies.push(...i.fullDependencies);
+    }
+    // const xxx = all.reduce((p, c) => {
+    //   p.push(...c);
+    //   return p;
+    // }, [] as ZipeModule[]);
+    // deps.push(...xxx);
+    // zipeModule.fullDependencies.push(...xxx.map(x=>x.de));
+
+    // deps.unshift(...all.flat());
+    // // unshift to render first
+    // zipeModule.fullDependencies.unshift(
+    //   ...all
+    //     .flat()
+    //     .map((x) => x.dependencies)
+    //     .flat()
+    // );
   }
 
   let [rawScriptPipeline, ssrRawScript] = await Promise.all([
@@ -131,7 +158,7 @@ export async function outputSSR(
       // enhance
       let en = enhancement.enhance.toString();
 
-      const m = en.match(/(?:enhance|\:\s?)\((\w+)(?:, (\w+))?\)/i);
+      const m = en.match(/(?:enhance|\:\s?)\((\w+)(?:, (\w+)){1,}\)/i);
       if (m.length === 0) {
         console.warn(chalk.yellow("[zipe] invalid enhancement provided"));
         continue;
@@ -140,7 +167,7 @@ export async function outputSSR(
       // scope
       enhanceClient += `{
         ${m[1].indexOf(":") >= 0 ? "const enhance = " : "function "}${en}
-        enhance(app, ${name})
+        enhance(app, ${name}, ctx)
       }`;
 
       enhanceImports += enhancement.importLine + "\n";
@@ -171,7 +198,8 @@ export async function outputSSR(
       external,
       filePathToVar,
       resolveDynamicImport,
-      appEnhancements
+      appEnhancements,
+      app
     );
   });
 
@@ -204,7 +232,7 @@ export async function outputSSR(
   };
   const xxx = await dynamicImportClient();
   // console.log('dxdada', xxx)
-  let clientScript = `${enhanceImports} ${xxx}\n${rawScriptPipeline.code}\n${enhanceClient}\n`;
+  let clientScript = `${xxx}\n${enhanceImports}\n${rawScriptPipeline.code}\n${enhanceClient}\n`;
 
   clientScript = await runTransforms(
     clientScript,
@@ -219,7 +247,7 @@ export async function outputSSR(
 
   // const htmlOutput = await
 
-  console.log(chalk.red("used imports: ", ...resolvedDynamicImports));
+  // console.log(chalk.red("used imports: ", ...resolvedDynamicImports));
   const styles =
     deps
       ?.filter((x) => x.sfc.descriptor?.styles.length ?? 0 > 0)
@@ -243,7 +271,7 @@ export async function outputSSR(
     clientScript += `const app = ${filePathToVar(
       "/@modules/vue"
     )}.createSSRApp(${appName})
-    applyZipeEnhancements(app);
+    ${enhanceClient ? "applyZipeEnhancements(app);" : ""}
     app.mount("#${containerId}");`;
 
     // prepend updateStyle HMR
@@ -252,24 +280,24 @@ export async function outputSSR(
     }
   }
 
-  let { code: scriptOutput } = await scriptTransforms.js(
-    clientScript,
-    filePath,
-    {
-      target: "es6",
-      minify: !isDev,
-      define: {
-        __DEV__: isDev.toString(),
-      },
-    }
-  );
+  try {
+    let { code: scriptOutput } = await scriptTransforms.js(
+      clientScript,
+      filePath,
+      {
+        target: "es6",
+        minify: !isDev,
+        define: {
+          __DEV__: isDev.toString(),
+        },
+      }
+    );
+    clientScript = scriptOutput || clientScript;
+  } catch (e) {
+    console.error(chalk.bgRed("Error transforming script"), e);
+  }
 
-  const html = renderToSSRApp(
-    htmlAppOutput,
-    scriptOutput || clientScript,
-    containerId,
-    styles
-  );
+  const html = renderToSSRApp(htmlAppOutput, clientScript, containerId, styles);
   console.log(`${filePath} SSR in ${Date.now() - start}ms.`);
 
   return html;
@@ -295,7 +323,8 @@ async function renderApp(
   externalDependencies: ZipeDependency[],
   filePathToVar: (s: string) => string,
   dynamicImports: (n: string) => void,
-  appEnhancements: AppEnhancement[]
+  appEnhancements: AppEnhancement[],
+  ctx: { request: BaseRequest }
 ): Promise<string> {
   const externalModules: Map<string, string> = new Map();
   const extraVars: Map<string, any> = new Map();
@@ -312,8 +341,11 @@ async function renderApp(
       externalModules.set(info.name, filePathToVar(info.path));
     }
 
+    const componentMap = new Map<string, object>();
+
     extraVars.set("__zipe_dynamic_importer_call", dynamicImports);
     extraVars.set("__DEV__", process.env.NODE_ENV !== "production");
+    extraVars.set("_____zipe_components", componentMap);
 
     // externalModules.set("__zipe_dynamic_importer_call", dynamicImports);
 
@@ -326,21 +358,46 @@ async function renderApp(
       `${script}\n return ${appName}`
     );
 
+    // console.log(serverApp.toString())
+
     // console.log(script);
     // console.log("v", ...[...externalModules.values(), ...extraVars.keys()]);
 
     const component = serverApp(...[...resolved, ...extraVars.values()]);
 
     const app = createSSRApp(component);
+    console.log('componnet', component)
 
     for (const enhancement of appEnhancements) {
       const d = (enhancement as any).__dep as ZipeDependency;
       const n = filePathToVar(d.info.path);
-      enhancement.enhance(app as any, externalModules[n]);
+      // console.log(componentMap, n)
+
+      const mod = componentMap[n];
+
+      if (enhancement.enhance) {
+        await enhancement.enhance(app as any, mod);
+      }
+      if (enhancement.ssr) {
+        await enhancement.ssr(app, mod, ctx);
+      }
+
+      if (mod.isReady) {
+        // app.use(mod);
+        mod.push({ name: "index" });
+        await mod.isReady();
+        // console.log("router?", mod.currentRoute.value);
+        console.log("router?");
+      }
     }
+    console.log('dddd', app)
+
+    // console.log(script);
 
     const rendered = await renderToString(app);
     console.log(`${appName} render SSR in ${Date.now() - start}ms.`);
+
+    console.log(script);
 
     return rendered;
   } catch (xx) {
