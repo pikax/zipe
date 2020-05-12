@@ -1,5 +1,6 @@
 import { ZipeModule } from "./parse";
 import { ZipeCache } from "./cache";
+import chalk from "chalk";
 
 const debug = require("debug")("zipe:scriptBuilder");
 
@@ -34,7 +35,15 @@ export function scriptBuilder(
   code += "\n{";
 
   if (exports.length === 0) {
-    console.log("no exports");
+    debug(`${name} no exports`);
+
+    // if is vue probably there's no `script` block
+    if (item.extension.endsWith("vue")) {
+      code += item.sfc.script.code || `\n${name} = {}\n`;
+    } else {
+      code = script;
+    }
+    // if(item.sfc.template.code || item.sfc.styles.some(x=>x.code))
   } else if (exports.length === 1 && exports[0] === "default") {
     code += script.replace("export default", `${name} = `);
   } else {
@@ -86,7 +95,7 @@ export function scriptBuilder(
       // TODO styles
     }
 
-    console.log('scope', scopeId, item.name)
+    // console.log('scope', scopeId, item.name)
     if (scopeId) {
       code += `\n${name}.__scopeId = "data-v-${scopeId}"\n`;
     }

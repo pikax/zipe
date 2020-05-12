@@ -9,9 +9,8 @@ createApp;
 
 export function renderToSSRApp(
   htmlHydrated: string,
-  appName: string,
-  runtimeName: string, //aka vue module name
   scriptSPA: string,
+  containerId: string,
   styles: StyleHeader[]
 ) {
   // since some ESM builds expect these to be replaced by the bundler
@@ -21,8 +20,6 @@ export function renderToSSRApp(
     `window.__DEV__ = true\n` +
     `window.process = { env: { NODE_ENV: 'development' }}\n` +
     `</script>\n`;
-
-  const devStyleUpdateInjection = `\nimport { updateStyle } from "/${hmrClientId}"`;
 
   const styleHeader = styles
     .map(
@@ -40,14 +37,9 @@ export function renderToSSRApp(
     ${styleHeader}
   </head>
   <body>
-    <div id="app">${htmlHydrated}</div>
+    <div id="${containerId}">${htmlHydrated}</div>
     ${devInjectionCode}
-    <script type="module">
-      ${devStyleUpdateInjection}
-
-      ${scriptSPA}
-
-      ${runtimeName}.createSSRApp(${appName}).mount("#app");
+    <script type="module">\n${scriptSPA}</script>
     </script>
   </body>
 </html>

@@ -4,9 +4,9 @@
     vue-router@next {{ router }}
   </div>
   <div class="module-resolve-store" :class="store">vuex@next {{ store }}</div>
-  <div class="module-resolve-web" :class="web_modules">
+  <!--<div class="module-resolve-web" :class="web_modules">
     web_modules {{ web_modules }}
-  </div>
+  </div> -->
   <div class="index-resolve" :class="indexResolve">
     directory index resolve: {{ indexResolve }}
   </div>

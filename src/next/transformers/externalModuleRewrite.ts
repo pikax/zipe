@@ -27,16 +27,28 @@ export const externalModuleRewrite: ZipeScriptTransform = async (
   const externalUnique = new Set<string>();
   const externals = module.fullDependencies.filter((x) => x.info.module);
 
-  for (const { info, importLine, importPath } of externals) {
+  for (const { info, importLine, importPath, dynamic } of externals) {
+    const cl = code.length;
+
     const varName = filePathToVar(info.path);
+    if (dynamic) {
+      debug(`Rewriting dynamic import '${importPath}' to '${varName}'`);
+
+      code = code.replace(`import${importPath}`, `zipeImport('${varName}')`);
+
+      // Only append replaced ones
+      if (code.length !== cl) {
+        externalUnique.add(info.path);
+      }
+      continue;
+    }
     const expected = importLine
       .replace("import * as", "let")
-      .replace("from", "=")
       .replace("import", "let")
+      .replace("from", "=")
       .replace(/ as /g, " : ")
       .replace(importPath, varName);
     // store length
-    const cl = code.length;
     code = code.replace(importLine, expected);
 
     // Only append replaced ones

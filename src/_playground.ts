@@ -7,8 +7,8 @@ const SSR = createViteSSR(({ app, zipeSSR }) => {
       ctx.body = await zipeSSR("/App.vue");
       return;
     }
-    if (ctx.path === "/output") {
-      ctx.body = await zipeSSR("/views/Test.vue");
+    if (ctx.path === "/playground") {
+      ctx.body = await zipeSSR("/playground/App.vue");
       return;
     }
 

@@ -1,5 +1,6 @@
 import { ZipeScriptTransform } from "../transformers";
 import { ZipeModule } from "../parse";
+import chalk from "chalk";
 const debug = require("debug")("zipe:transform:moduleRewrite");
 
 // rewrites the modules to variables
@@ -14,11 +15,6 @@ export const moduleRewrite: ZipeScriptTransform = async (
     modules?: ZipeModule[];
   }
 ): Promise<{ code: string; map: string | undefined }> => {
-  const modules = extra.modules;
-  if (!modules || modules.length === 0) {
-    console.error(`[zipe] ModuleRewrite: modules not passed!`);
-    return { code: content, map: undefined };
-  }
   const module = extra.module;
   if (!module) {
     console.error(`[zipe] ModuleRewrite: module not passed!`);
@@ -30,11 +26,16 @@ export const moduleRewrite: ZipeScriptTransform = async (
   let code = content;
   let map = undefined;
 
-  // const externals = module.fullDependencies.filter((x) => x.module);
   const internals = module.fullDependencies.filter((x) => !x.info.module);
 
-  for (const { info, importLine, importPath } of internals) {
+  for (const { info, importLine, importPath, dynamic } of internals) {
     const varName = filePathToVar(info.path);
+    if (dynamic) {
+      debug(`Rewriting dynamic import '${importPath}' to '${varName}'`);
+
+      code = code.replace(`import${importPath}`, `zipeImport('${varName}')`);
+      continue;
+    }
     const expected = importLine
       .replace("import * as", "let")
       .replace("from", "=")

@@ -58,6 +58,7 @@ export function parseImportsExports(
           importLine: content.slice(lineStart, lineEnd),
           dynamic: dynamicIndex !== -1,
         };
+        const info = resolveImport(importer, id, resolver);
         if (dynamicIndex === -1 || hasLiteralDynamicId) {
           // do not rewrite external imports
           if (isExternalUrl(id)) {
@@ -65,17 +66,12 @@ export function parseImportsExports(
           }
           imported.push({
             ...dep,
-            info: resolveImport(importer, id, resolver),
+            info,
           });
         } else {
           imported.push({
             ...dep,
-            info: {
-              fullPath: undefined as any, //TODO FIX ME
-              name: id,
-              path: id,
-              module: true,
-            },
+            info,
           });
           console.log(`[zipe] ignored dynamic import(${id})`);
         }

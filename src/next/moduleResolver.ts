@@ -5,7 +5,12 @@ export interface ModuleInformation {
 
   fullPath: string;
 
-  module: boolean;
+  /**
+   * 0 = local file
+   * 1 = modules under node_modules
+   * 2 = web module
+   */
+  module: 0 | 1 | 2;
 }
 
 export interface ModuleResolver {

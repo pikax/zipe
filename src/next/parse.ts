@@ -167,6 +167,9 @@ export async function parse(
       resolver
     );
 
+    // console.log("item sfc template");
+    // console.log(item.sfc.ssrTemplate.code);
+
     item.sfc.script.dependencies = imports;
     item.sfc.script.exports = exports;
     item.exports = exports;

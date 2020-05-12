@@ -8,7 +8,6 @@ import { posix } from "path";
 import mergeOptions from "merge-options";
 import { ZipeScriptTransform } from "../transformers";
 import { SFCCompiler } from "../../utils";
-import hash_sum from "hash-sum";
 
 const debug = require("debug")("zipe:transformers:template");
 

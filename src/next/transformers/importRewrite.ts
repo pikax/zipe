@@ -2,8 +2,8 @@ import { ZipeScriptTransform } from "../transformers";
 import { ZipeModule } from "../parse";
 
 const debug = require("debug")("zipe:transform:importRewrite");
-// rewrites `import` to ${varName} =
 
+// rewrites `import` to ${varName} =
 export const importRewrite: ZipeScriptTransform = async (
   content,
   filePath,
@@ -28,12 +28,18 @@ export const importRewrite: ZipeScriptTransform = async (
   const externals = module.fullDependencies.filter((x) => x.info.module);
 
   // console.log("externals", { externals });
-  for (const { info, importLine, importPath } of externals) {
+  for (const { info, importLine, importPath, dynamic } of externals) {
     const varName = filePathToVar(info.path);
+    if (dynamic) {
+      debug(`Rewriting dynamic import '${importPath}' to '${varName}'`);
+
+      code = code.replace(`import${importPath}`, `zipeImport('${varName}')`);
+      continue;
+    }
     const expected = importLine
       .replace("import * as", "let")
-      .replace("from", "=")
       .replace("import", "let")
+      .replace("from", "=")
       .replace(/ as /g, " : ")
       .replace(importPath, varName);
     code = code.replace(importLine, expected);

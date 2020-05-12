@@ -16,6 +16,7 @@ The HMR is the same as `vite` so no more page reloads, only the changed componen
 - SSR with HMR
 - importing js/ts files in SFC
 - CSS scoped
+- Async imports
 
 ## NOT working
 
@@ -25,8 +26,11 @@ The HMR is the same as `vite` so no more page reloads, only the changed componen
 - css modules
 - css scope seems not to be working when doing SSR
 - No JSX/TSX support
-- Async imports are not SSR
 - Custom HTML index file or `vue-router`
+
+# No support
+
+- `web_modules` not supported on the server side, it will try to import by `name`. eg: `import('lodash')`
 
 ## TODO
 
@@ -85,7 +89,7 @@ createServer({
 
 git clone https://github.com/pikax/zipe
 
-cd zip
+cd zipe
 
 yarn
 

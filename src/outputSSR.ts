@@ -12,6 +12,8 @@ import { renderToString } from "@vue/server-renderer";
 import { renderToSSRApp } from "./ssrTemplate";
 import { createSSRApp, createApp } from "vue";
 import hash_sum from "hash-sum";
+import chalk from "chalk";
+import { ZipeOutputPipeline } from "./next/outputPipeline";
 
 export async function outputSSR(
   filePath: string,
@@ -19,13 +21,13 @@ export async function outputSSR(
   fileCache: ZipeCache,
   dependenciesCache: ZipeCache,
   sfcParser: ZipeParser,
-  pipeline: (module: ZipeModule, ssr: boolean) => Promise<string>,
+  { scriptPipeline, dynamicImportPipeline }: ZipeOutputPipeline,
   scriptTransforms: Record<string, ZipeScriptTransform>,
   outputTransforms: ZipeScriptTransform[]
 ): Promise<string> {
   const start = Date.now();
 
-  const module = await parse(
+  const zipeModule = await parse(
     filePath,
     "/",
     resolver,
@@ -34,50 +36,119 @@ export async function outputSSR(
     sfcParser,
     scriptTransforms
   );
-  const deps = await module.dependenciesPromise;
+  const deps = await zipeModule.dependenciesPromise;
 
-  let [script, ssrRawScript] = await Promise.all([
-    pipeline(module, false),
-    pipeline(module, true),
+  let [rawScriptPipeline, ssrRawScript] = await Promise.all([
+    scriptPipeline(zipeModule, false),
+    scriptPipeline(zipeModule, true).then((x) => {
+      return dynamicImportPipeline(zipeModule, x.processed, null, true).then(
+        ({ code, processed }) => {
+          if (!code) {
+            return x.code;
+          }
+          const cacheName = `__cached_zipe_import`;
+          const d = `
+      let ${cacheName};
+      function zipeImport(name){
+        // notify the server about the imports
+        __zipe_dynamic_importer_call(name);
+        if(${cacheName}){
+          return ${cacheName}[name]
+        }
+
+        ${code}
+
+        ${cacheName} = {
+          ${[...new Set(processed)]
+            .map(filePathToVar)
+            .map((p) => `${p}: Promise.resolve(${p})`)}
+        }
+        return ${cacheName}[name]
+      }
+      // end dynamic import
+      `;
+          return `${d}\n${x.code}`;
+        }
+      );
+    }),
   ]);
+
+  const resolvedDynamicImports = new Set<string>();
+  const resolveDynamicImport = (s: string) => resolvedDynamicImports.add(s);
 
   const ssrTransforms = [externalModuleRewriteSSR, ...outputTransforms];
   const clientTransforms = [externalModuleRewrite, ...outputTransforms];
 
-  const [ssrScript, clientScript] = await Promise.all([
-    runTransforms(
-      ssrRawScript,
-      filePath,
-      {},
-      {
-        filePathToVar,
-        module,
-      },
-      ssrTransforms
-    ),
-    runTransforms(
-      script,
-      filePath,
-      {},
-      {
-        filePathToVar,
-        module,
-      },
-      clientTransforms
-    ),
-  ]);
-
   const appName = filePathToVar(filePath);
-  const external = module.fullDependencies.filter((x) => x.info.module);
-  const htmlOutput = await renderApp(
-    ssrScript,
-    appName,
-    external,
-    filePathToVar
+  const external = zipeModule.fullDependencies.filter((x) => x.info.module > 0);
+
+  // TODO transforms for server and client should run in parallel
+  // if there's no dynamic import
+
+  const htmlAppOutput = await runTransforms(
+    ssrRawScript,
+    filePath,
+    {},
+    {
+      filePathToVar,
+      module: zipeModule,
+    },
+    ssrTransforms
+  ).then((ssrScript) => {
+    return renderApp(
+      ssrScript,
+      appName,
+      external,
+      filePathToVar,
+      resolveDynamicImport
+    );
+  });
+
+  const dynamicImportClient = async () => {
+    const { code, processed } = await dynamicImportPipeline(
+      zipeModule,
+      rawScriptPipeline.processed,
+      resolvedDynamicImports,
+      false
+    );
+    const cacheName = `__cached_zipe_import`;
+    const d = `
+      let ${cacheName};
+      function zipeImport(name){
+        if(${cacheName}){
+          return ${cacheName}[name]
+        }
+
+        ${code}
+
+        ${cacheName} = {
+          ${[...new Set(processed)]
+            .map(filePathToVar)
+            .map((p) => `${p}: Promise.resolve(${p})`)}
+        }
+        return ${cacheName}[name]
+      }`;
+
+    return d;
+  };
+  const xxx = await dynamicImportClient();
+  // console.log('dxdada', xxx)
+  let clientScript = `${xxx}\n${rawScriptPipeline.code}`;
+
+  clientScript = await runTransforms(
+    clientScript,
+    filePath,
+    {},
+    {
+      filePathToVar,
+      module: zipeModule,
+    },
+    clientTransforms
   );
 
-  // console.log("deps", deps?.length);
-  // console.log(';ssss', deps?.map(x=>x.sfc.descriptor?.styles))
+  // const htmlOutput = await
+
+  console.log(chalk.red("used imports: ", ...resolvedDynamicImports));
   const styles =
     deps
       ?.filter((x) => x.sfc.descriptor?.styles.length ?? 0 > 0)
@@ -94,11 +165,36 @@ export async function outputSSR(
       )
       .flat() ?? [];
 
-  const html = renderToSSRApp(
-    htmlOutput,
-    appName,
-    filePathToVar("/@modules/vue"),
+  // append the createApp
+  const containerId = "app";
+  const isDev: boolean = true;
+  {
+    clientScript += `${filePathToVar(
+      "/@modules/vue"
+    )}.createSSRApp(${appName}).mount("#${containerId}");`;
+
+    // prepend updateStyle HMR
+    if (isDev) {
+      clientScript = `import { updateStyle } from "/vite/hmr"\n${clientScript}`;
+    }
+  }
+
+  const { code: scriptOutput } = await scriptTransforms.js(
     clientScript,
+    filePath,
+    {
+      target: "es6",
+      minify: !isDev,
+      define: {
+        __DEV__: isDev.toString(),
+      },
+    }
+  );
+
+  const html = renderToSSRApp(
+    htmlAppOutput,
+    scriptOutput || clientScript,
+    containerId,
     styles
   );
   console.log(`${filePath} SSR in ${Date.now() - start}ms.`);
@@ -115,7 +211,7 @@ async function runTransforms(
 ): Promise<string> {
   for (const transform of transforms) {
     const t = await transform(code, filePath, options, extra);
-    code = t.code;
+    code = t.code ?? code;
   }
   return code;
 }
@@ -124,30 +220,50 @@ async function renderApp(
   script: string,
   appName: string,
   externalDependencies: ZipeDependency[],
-  filePathToVar: (s: string) => string
+  filePathToVar: (s: string) => string,
+  dynamicImports: (n: string) => void
 ): Promise<string> {
   const externalModules: Map<string, string> = new Map();
+  const extraVars: Map<string, any> = new Map();
   const start = Date.now();
   try {
-    for (const d of externalDependencies) {
-      externalModules.set(d.info.name, filePathToVar(d.info.path));
+    for (const { info } of externalDependencies) {
+      if (info.module === 2) {
+        console.warn(
+          chalk.yellow(
+            `[zipe] web_modules are not supported by the server, falling back to node_module, ${info.name}`
+          )
+        );
+      }
+      externalModules.set(info.name, filePathToVar(info.path));
     }
+
+    extraVars.set("__zipe_dynamic_importer_call", dynamicImports);
+    extraVars.set("__DEV__", process.env.NODE_ENV !== "production");
+
+    // externalModules.set("__zipe_dynamic_importer_call", dynamicImports);
+
     const resolved = await Promise.all(
       [...externalModules.keys()].map((x) => import(x))
     );
 
-    const xxx = new Function(
-      ...[...externalModules.values()].map((x) => x),
+    const serverApp = new Function(
+      ...[...externalModules.values(), ...extraVars.keys()],
+      // .map((x) => x)
+      // .concat(...extraVars.keys()),
       `${script}\n return ${appName}`
     );
 
-    const component = xxx(...resolved);
+    // console.log(script);
+    // console.log("v", ...[...externalModules.values(), ...extraVars.keys()]);
+
+    const component = serverApp(...[...resolved, ...extraVars.values()]);
     const app = renderToString(createSSRApp(component));
     console.log(`${appName} render SSR in ${Date.now() - start}ms.`);
 
     return app;
   } catch (xx) {
-    console.error(xx, script);
+    console.error(xx);
     console.log("externalModules", externalModules);
     return `<div>
       <p style="color:red">ERROR</p>
@@ -159,3 +275,8 @@ async function renderApp(
     </div>`;
   }
 }
+
+// async function renderClientApp( script: string,
+//   appName: string,
+//   externalDependencies: ZipeDependency[],
+//   filePathToVar: (s: string) => string)
